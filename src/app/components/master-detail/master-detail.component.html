@@ -1,0 +1,71 @@
+<div class="master-detail-container">
+  <!-- Categories Sidebar (Master) -->
+  <div class="categories-sidebar">
+    <div class="sidebar-header">
+      <h2>Categories</h2>
+      <button 
+        mat-icon-button 
+        (click)="refreshCategories()"
+        [disabled]="categoriesLoading()"
+        aria-label="Refresh categories">
+        <mat-icon>refresh</mat-icon>
+      </button>
+    </div>
+
+    <div class="sidebar-content">
+      @if (categoriesLoading()) {
+        <div class="loading-container">
+          <mat-spinner diameter="40"></mat-spinner>
+          <p>Loading categories...</p>
+        </div>
+      } @else if (categoriesError()) {
+        <div class="error-container">
+          <mat-icon color="warn">error</mat-icon>
+          <p>{{ categoriesError() }}</p>
+          <button mat-raised-button color="primary" (click)="refreshCategories()">
+            Try Again
+          </button>
+        </div>
+      } @else if (categories().length === 0) {
+        <div class="empty-container">
+          <mat-icon>folder_open</mat-icon>
+          <p>No categories found</p>
+        </div>
+      } @else {
+        <div class="categories-list">
+          @for (category of categories(); track category.id) {
+            <mat-card 
+              class="category-item" 
+              [class.selected]="selectedCategory()?.id === category.id"
+              (click)="selectCategory(category)">
+              <mat-card-content>
+                <h3>{{ category.Name }}</h3>
+                @if (category.description) {
+                  <p class="category-description">{{ category.description }}</p>
+                }
+              </mat-card-content>
+            </mat-card>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Lines Content (Detail) -->
+  <div class="lines-content">
+    @if (!selectedCategory()) {
+      <div class="no-selection">
+        <mat-icon>table_chart</mat-icon>
+        <h3>No Category Selected</h3>
+        <p>Select a category from the left sidebar to view its lines</p>
+      </div>
+    } @else {
+      <app-lines 
+        [categoryId]="selectedCategory()!.id" 
+        [categoryName]="selectedCategory()!.Name"
+        [showToolbar]="false">
+      </app-lines>
+    }
+  </div>
+</div>
+
