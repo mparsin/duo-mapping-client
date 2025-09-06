@@ -1,0 +1,102 @@
+<div class="edit-dialog">
+  <h2 mat-dialog-title>Edit Line: {{ getLineDisplayName() }} ({{ getLineFieldName()  }})</h2>
+
+  <mat-dialog-content>
+    <form [formGroup]="editForm" class="edit-form">
+      <!-- Table Name Autocomplete -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Table Name *</mat-label>
+        <input
+          #tableInput
+          matInput
+          formControlName="table_name"
+          [matAutocomplete]="tableAuto"
+          placeholder="Type to search tables..."
+          [disabled]="loadingTables()"
+          (focus)="onTableInputFocus()"
+          (blur)="onTableInputBlur()"
+          (input)="onTableInputChange()">
+        <mat-autocomplete
+          #tableAuto="matAutocomplete"
+          [displayWith]="displayTableName"
+          (optionSelected)="onTableSelected($event.option.value)"
+          class="compact-autocomplete"
+          [class.hide-dropdown]="!tableDropdownOpen">
+          @if (loadingTables()) {
+            <mat-option disabled>
+              <mat-spinner diameter="20"></mat-spinner>
+              Loading tables...
+            </mat-option>
+          } @else if (tableDropdownOpen) {
+            @for (table of filteredTables$ | async; track table.id) {
+              <mat-option [value]="table" class="compact-option">
+                {{ table.name }} - {{ table.description }}
+              </mat-option>
+            }
+          }
+        </mat-autocomplete>
+        <mat-error *ngIf="editForm.get('table_name')?.hasError('required')">
+          Table name is required
+        </mat-error>
+      </mat-form-field>
+
+      <!-- Column Name Autocomplete -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Column Name *</mat-label>
+        <input
+          #columnInput
+          matInput
+          formControlName="column_name"
+          [matAutocomplete]="columnAuto"
+          placeholder="Type to search columns..."
+          [disabled]="editForm.get('column_name')?.disabled || false"
+          (focus)="onColumnInputFocus()"
+          (blur)="onColumnInputBlur()"
+          (input)="onColumnInputChange()">
+        <mat-autocomplete
+          #columnAuto="matAutocomplete"
+          [displayWith]="displayColumnName"
+          (optionSelected)="onColumnSelected($event.option.value)"
+          class="compact-autocomplete"
+          [class.hide-dropdown]="!columnDropdownOpen">
+          @if (loadingColumns()) {
+            <mat-option disabled>
+              <mat-spinner diameter="20"></mat-spinner>
+              Loading columns...
+            </mat-option>
+          } @else if (columns().length === 0 && !loadingColumns()) {
+            <mat-option disabled>
+              Please select a table first
+            </mat-option>
+          } @else if (columnDropdownOpen) {
+            @for (column of filteredColumns$ | async; track column.id) {
+              <mat-option [value]="column" class="compact-option">
+                <div class="column-option">
+                  <div class="column-name">{{ column.name }}</div>
+                  @if (column.comment && column.comment !== 'None' && column.comment.trim()) {
+                    <div class="column-comment">{{ column.comment }}</div>
+                  }
+                  <div class="column-type">({{ column.type }})</div>
+                </div>
+              </mat-option>
+            }
+          }
+        </mat-autocomplete>
+        <mat-error *ngIf="editForm.get('column_name')?.hasError('required')">
+          Column name is required
+        </mat-error>
+      </mat-form-field>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button #cancelButton mat-button (click)="onCancel()">Cancel</button>
+    <button
+      mat-raised-button
+      color="primary"
+      (click)="onSave()"
+      [disabled]="!editForm.valid">
+      Save
+    </button>
+  </mat-dialog-actions>
+</div>

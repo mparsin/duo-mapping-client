@@ -1,0 +1,298 @@
+<div class="lines-container">
+  @if (showToolbar) {
+    <mat-toolbar class="lines-toolbar">
+      <button mat-icon-button (click)="goBack()" aria-label="Go back">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <span class="toolbar-title">
+        Lines for {{ categoryName || 'Category' }}
+      </span>
+      <span class="spacer"></span>
+      <button
+        mat-icon-button
+        (click)="toggleGroupBySubCategory()"
+        [disabled]="loading()"
+        [color]="groupBySubCategory() ? 'primary' : ''"
+        aria-label="Toggle group by sub-category">
+        <mat-icon>{{ groupBySubCategory() ? 'group_work' : 'view_list' }}</mat-icon>
+      </button>
+      <button
+        mat-icon-button
+        (click)="refreshLines()"
+        [disabled]="loading()"
+        aria-label="Refresh">
+        <mat-icon>refresh</mat-icon>
+      </button>
+    </mat-toolbar>
+  }
+
+  <div class="content">
+    @if (loading()) {
+      <div class="loading-container">
+        <mat-spinner diameter="50"></mat-spinner>
+        <p>Loading lines...</p>
+      </div>
+    } @else if (error()) {
+      <div class="error-container">
+        <mat-icon color="warn">error</mat-icon>
+        <p>{{ error() }}</p>
+        <button mat-raised-button color="primary" (click)="refreshLines()">
+          Try Again
+        </button>
+      </div>
+    } @else if (lines().length === 0) {
+      <div class="empty-container">
+        <mat-icon>table_chart</mat-icon>
+        <p>No lines found for this category</p>
+        <button mat-raised-button color="primary" (click)="refreshLines()">
+          Refresh
+        </button>
+      </div>
+    } @else {
+      <!-- Bulk Update Section -->
+      @if (linesWithoutTable().length > 0 || linesWithoutColumn().length > 0) {
+        <mat-card class="bulk-update-card">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>batch_prediction</mat-icon>
+              Bulk Update Commands
+            </mat-card-title>
+            <mat-card-subtitle>
+              @if (linesWithoutTable().length > 0 && linesWithoutColumn().length > 0) {
+                {{ linesWithoutTable().length }} line(s) without table, {{ linesWithoutColumn().length }} line(s) without column
+              } @else if (linesWithoutTable().length > 0) {
+                {{ linesWithoutTable().length }} line(s) without table assignment
+              } @else {
+                {{ linesWithoutColumn().length }} line(s) without column assignment
+              }
+            </mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <form [formGroup]="bulkUpdateForm" class="bulk-update-form">
+              <div class="bulk-update-controls">
+                <mat-form-field appearance="outline" class="table-selector">
+                  <mat-label>Select Table</mat-label>
+                  <input
+                    matInput
+                    formControlName="table_name"
+                    [matAutocomplete]="tableAuto"
+                    placeholder="Type to search tables..."
+                    (focus)="onTableInputFocus()"
+                    (blur)="onTableInputBlur()"
+                    (input)="onTableInputChange()">
+                  <mat-autocomplete
+                    #tableAuto="matAutocomplete"
+                    [displayWith]="displayTableName"
+                    (optionSelected)="onTableSelected($event.option.value)"
+                    class="compact-autocomplete"
+                    [class.hide-dropdown]="!tableDropdownOpen">
+                    @if (tableDropdownOpen) {
+                      @for (table of filteredTables$ | async; track table.id) {
+                        <mat-option [value]="table" class="compact-option">
+                          {{ table.name }} - {{ table.description }}
+                        </mat-option>
+                      }
+                    }
+                  </mat-autocomplete>
+                </mat-form-field>
+                
+                <button 
+                  mat-raised-button 
+                  color="primary" 
+                  [disabled]="!selectedTableId() || bulkUpdating()"
+                  (click)="bulkUpdateTableForLines()"
+                  class="bulk-update-button">
+                  @if (bulkUpdating()) {
+                    <mat-spinner diameter="20"></mat-spinner>
+                    Updating {{ bulkUpdateProgress().completed }}/{{ bulkUpdateProgress().total }}...
+                  } @else {
+                    <mat-icon>update</mat-icon>
+                    Set Table for All Lines
+                  }
+                </button>
+              </div>
+            </form>
+            @if (bulkUpdating()) {
+              <div class="bulk-update-progress">
+                <mat-progress-bar 
+                  mode="determinate" 
+                  [value]="(bulkUpdateProgress().completed / bulkUpdateProgress().total) * 100">
+                </mat-progress-bar>
+                <p class="progress-text">
+                  Updated {{ bulkUpdateProgress().completed }} of {{ bulkUpdateProgress().total }} lines
+                  @if (bulkUpdateProgress().failed > 0) {
+                    ({{ bulkUpdateProgress().failed }} failed)
+                  }
+                </p>
+              </div>
+            } @else {
+              <p class="bulk-update-description">
+                This will set the selected table for all {{ linesWithoutTable().length }} line(s) that currently don't have a table assigned. Column names will remain unchanged.
+              </p>
+            }
+
+            <!-- Column Update Command -->
+            @if (linesWithoutColumn().length > 0) {
+              <mat-divider class="command-divider"></mat-divider>
+              <div class="bulk-update-controls">
+                <div class="command-info">
+                  <mat-icon>view_column</mat-icon>
+                  <span class="command-title">Update Columns by Field Name</span>
+                </div>
+                
+                <button 
+                  mat-raised-button 
+                  color="accent" 
+                  [disabled]="bulkUpdatingColumns()"
+                  (click)="bulkUpdateColumnsForLines()"
+                  class="bulk-update-button">
+                  @if (bulkUpdatingColumns()) {
+                    <mat-spinner diameter="20"></mat-spinner>
+                    Updating {{ columnBulkUpdateProgress().completed }}/{{ columnBulkUpdateProgress().total }}...
+                  } @else {
+                    <mat-icon>auto_fix_high</mat-icon>
+                    Match Columns by Field Name
+                  }
+                </button>
+              </div>
+              
+              @if (bulkUpdatingColumns()) {
+                <div class="bulk-update-progress">
+                  <mat-progress-bar 
+                    mode="determinate" 
+                    [value]="(columnBulkUpdateProgress().completed / columnBulkUpdateProgress().total) * 100">
+                  </mat-progress-bar>
+                  <p class="progress-text">
+                    Updated {{ columnBulkUpdateProgress().completed }} of {{ columnBulkUpdateProgress().total }} columns
+                    @if (columnBulkUpdateProgress().failed > 0) {
+                      ({{ columnBulkUpdateProgress().failed }} failed)
+                    }
+                  </p>
+                </div>
+              } @else {
+                <p class="bulk-update-description">
+                  This will match field names to column names for all {{ linesWithoutColumn().length }} line(s) that have a table but no column assigned.
+                </p>
+              }
+            }
+          </mat-card-content>
+        </mat-card>
+        
+        <mat-divider class="section-divider"></mat-divider>
+      }
+
+      <!-- Lines Table -->
+      <div class="table-container">
+        @if (groupBySubCategory()) {
+          <!-- Grouped by Sub-category -->
+          @for (group of getGroupKeys(); track group) {
+            <div class="sub-category-group">
+              <div class="sub-category-header">
+                <mat-icon>folder</mat-icon>
+                <h3>{{ group }}</h3>
+                <span class="line-count">{{ groupedLines()[group].length }} line(s)</span>
+              </div>
+              
+              <table mat-table [dataSource]="groupedLines()[group]" class="lines-table">
+                <!-- ID Column -->
+                <ng-container matColumnDef="id">
+                  <th mat-header-cell *matHeaderCellDef>ID</th>
+                  <td mat-cell *matCellDef="let line">{{ line.id }}</td>
+                </ng-container>
+
+                <!-- Name Column -->
+                <ng-container matColumnDef="name">
+                  <th mat-header-cell *matHeaderCellDef>Name</th>
+                  <td mat-cell *matCellDef="let line">{{ line.name || line.Name || '-' }}</td>
+                </ng-container>
+
+                <!-- Field Name Column -->
+                <ng-container matColumnDef="field_name">
+                  <th mat-header-cell *matHeaderCellDef>Field Name</th>
+                  <td mat-cell *matCellDef="let line">{{ line.field_name || '-' }}</td>
+                </ng-container>
+
+                <!-- Table Name Column -->
+                <ng-container matColumnDef="table_name">
+                  <th mat-header-cell *matHeaderCellDef>Table Name</th>
+                  <td mat-cell *matCellDef="let line">{{ line.table_name || '-' }}</td>
+                </ng-container>
+
+                <!-- Column Name Column -->
+                <ng-container matColumnDef="column_name">
+                  <th mat-header-cell *matHeaderCellDef>Column Name</th>
+                  <td mat-cell *matCellDef="let line">{{ line.column_name || '-' }}</td>
+                </ng-container>
+
+                <!-- Default Value Column -->
+                <ng-container matColumnDef="default">
+                  <th mat-header-cell *matHeaderCellDef>Default</th>
+                  <td mat-cell *matCellDef="let line">{{ line.default || '-' }}</td>
+                </ng-container>
+
+                <!-- Reason Column -->
+                <ng-container matColumnDef="reason">
+                  <th mat-header-cell *matHeaderCellDef>Reason</th>
+                  <td mat-cell *matCellDef="let line">{{ line.reason || '-' }}</td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns;" (click)="openEditDialog(row)" class="clickable-row"></tr>
+              </table>
+            </div>
+          }
+        } @else {
+          <!-- Regular flat table -->
+          <table mat-table [dataSource]="lines()" class="lines-table">
+            <!-- ID Column -->
+            <ng-container matColumnDef="id">
+              <th mat-header-cell *matHeaderCellDef>ID</th>
+              <td mat-cell *matCellDef="let line">{{ line.id }}</td>
+            </ng-container>
+
+            <!-- Name Column -->
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef>Name</th>
+              <td mat-cell *matCellDef="let line">{{ line.name || line.Name || '-' }}</td>
+            </ng-container>
+
+            <!-- Field Name Column -->
+            <ng-container matColumnDef="field_name">
+              <th mat-header-cell *matHeaderCellDef>Field Name</th>
+              <td mat-cell *matCellDef="let line">{{ line.field_name || '-' }}</td>
+            </ng-container>
+
+            <!-- Table Name Column -->
+            <ng-container matColumnDef="table_name">
+              <th mat-header-cell *matHeaderCellDef>Table Name</th>
+              <td mat-cell *matCellDef="let line">{{ line.table_name || '-' }}</td>
+            </ng-container>
+
+            <!-- Column Name Column -->
+            <ng-container matColumnDef="column_name">
+              <th mat-header-cell *matHeaderCellDef>Column Name</th>
+              <td mat-cell *matCellDef="let line">{{ line.column_name || '-' }}</td>
+            </ng-container>
+
+            <!-- Default Value Column -->
+            <ng-container matColumnDef="default">
+              <th mat-header-cell *matHeaderCellDef>Default</th>
+              <td mat-cell *matCellDef="let line">{{ line.default || '-' }}</td>
+            </ng-container>
+
+            <!-- Reason Column -->
+            <ng-container matColumnDef="reason">
+              <th mat-header-cell *matHeaderCellDef>Reason</th>
+              <td mat-cell *matCellDef="let line">{{ line.reason || '-' }}</td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;" (click)="openEditDialog(row)" class="clickable-row"></tr>
+          </table>
+        }
+      </div>
+    }
+  </div>
+</div>
+
+
