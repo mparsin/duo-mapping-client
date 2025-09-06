@@ -8,6 +8,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
+import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Observable, map, startWith } from 'rxjs';
 import { ApiService } from '../../../services/api.service';
@@ -32,6 +34,8 @@ export interface EditLineDialogData {
     MatAutocompleteModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
+    MatIconModule,
+    MatTooltipModule,
     ReactiveFormsModule
   ],
   templateUrl: './edit-line-dialog.component.html',
@@ -346,6 +350,64 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
       return column;
     }
     return column ? column.name : '';
+  }
+
+  findMatchingColumn(): void {
+    const fieldName = this.data.line.field_name;
+    
+    if (!fieldName || fieldName.trim() === '') {
+      this.snackBar.open('No field name available to match', 'Close', {
+        duration: 3000
+      });
+      return;
+    }
+
+    if (this.columns().length === 0) {
+      this.snackBar.open('No columns loaded to search', 'Close', {
+        duration: 3000
+      });
+      return;
+    }
+
+    // Normalize the field name for comparison
+    const normalizedFieldName = fieldName.toLowerCase().trim();
+    
+    // Try to find exact match first
+    let matchedColumn = this.columns().find(column => 
+      column.name.toLowerCase() === normalizedFieldName
+    );
+
+    // If no exact match, try partial match
+    if (!matchedColumn) {
+      matchedColumn = this.columns().find(column => 
+        column.name.toLowerCase().includes(normalizedFieldName) ||
+        normalizedFieldName.includes(column.name.toLowerCase())
+      );
+    }
+
+    // If still no match, try matching with underscores/hyphens replaced with spaces
+    if (!matchedColumn) {
+      const fieldNameWithSpaces = normalizedFieldName.replace(/[_-]/g, ' ');
+      matchedColumn = this.columns().find(column => {
+        const columnNameWithSpaces = column.name.toLowerCase().replace(/[_-]/g, ' ');
+        return columnNameWithSpaces === fieldNameWithSpaces ||
+               columnNameWithSpaces.includes(fieldNameWithSpaces) ||
+               fieldNameWithSpaces.includes(columnNameWithSpaces);
+      });
+    }
+
+    if (matchedColumn) {
+      this.editForm.patchValue({ column_name: matchedColumn });
+      this.snackBar.open(`Found matching column: ${matchedColumn.name}`, 'Close', {
+        duration: 2000
+      });
+      // Focus on the column input to show the selection
+      this.columnInput?.nativeElement?.focus();
+    } else {
+      this.snackBar.open('No matching column found', 'Close', {
+        duration: 3000
+      });
+    }
   }
 
   onSave(): void {
