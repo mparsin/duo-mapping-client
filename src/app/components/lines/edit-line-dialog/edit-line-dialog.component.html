@@ -53,6 +53,15 @@
           (focus)="onColumnInputFocus()"
           (blur)="onColumnInputBlur()"
           (input)="onColumnInputChange()">
+        <button 
+          mat-icon-button 
+          matSuffix 
+          type="button"
+          (click)="findMatchingColumn()"
+          [disabled]="!editForm.get('table_name')?.value || loadingColumns()"
+          matTooltip="Find matching column based on field name">
+          <mat-icon>search</mat-icon>
+        </button>
         <mat-autocomplete
           #columnAuto="matAutocomplete"
           [displayWith]="displayColumnName"

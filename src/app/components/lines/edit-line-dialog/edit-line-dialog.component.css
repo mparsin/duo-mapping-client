@@ -82,3 +82,21 @@ mat-dialog-actions button {
 mat-spinner {
   margin-right: 8px;
 }
+
+/* Search button styling */
+button[matSuffix] {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+button[matSuffix]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Ensure input has padding for the button */
+.mat-mdc-form-field-has-icon-suffix .mat-mdc-text-field-wrapper {
+  padding-right: 48px;
+}
