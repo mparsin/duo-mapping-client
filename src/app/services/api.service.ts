@@ -75,4 +75,20 @@ export class ApiService {
   getSubCategories(): Observable<SubCategory[]> {
     return this.http.get<SubCategory[]>(`${this.baseUrl}/sub-categories`);
   }
+
+  // Clear table assignment for a line (set table_id to 0)
+  clearLineTable(lineId: number): Observable<Line> {
+    const body = {
+      table_id: 0
+    };
+    return this.http.patch<Line>(`${this.baseUrl}/lines/${lineId}`, body);
+  }
+
+  // Clear column assignment for a line (set column_id to 0)
+  clearLineColumn(lineId: number): Observable<Line> {
+    const body = {
+      column_id: 0
+    };
+    return this.http.patch<Line>(`${this.baseUrl}/lines/${lineId}`, body);
+  }
 }

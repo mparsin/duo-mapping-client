@@ -61,15 +61,36 @@ export class LinesComponent implements OnInit, OnChanges {
   subCategories = signal<SubCategory[]>([]);
   loading = signal<boolean>(false);
   error = signal<string | null>(null);
-  groupBySubCategory = signal<boolean>(false);
+  groupBySubCategory = signal<boolean>(true);
   bulkUpdating = signal<boolean>(false);
   bulkUpdatingColumns = signal<boolean>(false);
+  bulkClearingTables = signal<boolean>(false);
+  bulkClearingColumns = signal<boolean>(false);
   selectedTableId = signal<number | null>(null);
+  categoryBulkCommandsVisible = signal<boolean>(false);
   bulkUpdateProgress = signal<{ completed: number, total: number, failed: number }>({ completed: 0, total: 0, failed: 0 });
   columnBulkUpdateProgress = signal<{ completed: number, total: number, failed: number }>({ completed: 0, total: 0, failed: 0 });
+  tableClearProgress = signal<{ completed: number, total: number, failed: number }>({ completed: 0, total: 0, failed: 0 });
+  columnClearProgress = signal<{ completed: number, total: number, failed: number }>({ completed: 0, total: 0, failed: 0 });
 
   // Form for bulk update
   bulkUpdateForm: FormGroup;
+
+  // Sub-category specific forms and state
+  subCategoryBulkUpdateForms = new Map<string, FormGroup>();
+  subCategoryBulkUpdating = new Map<string, boolean>();
+  subCategoryBulkUpdatingColumns = new Map<string, boolean>();
+  subCategoryBulkClearingTables = new Map<string, boolean>();
+  subCategoryBulkClearingColumns = new Map<string, boolean>();
+  subCategorySelectedTableIds = new Map<string, number | null>();
+  subCategoryBulkUpdateProgress = new Map<string, { completed: number, total: number, failed: number }>();
+  subCategoryColumnBulkUpdateProgress = new Map<string, { completed: number, total: number, failed: number }>();
+  subCategoryTableClearProgress = new Map<string, { completed: number, total: number, failed: number }>();
+  subCategoryColumnClearProgress = new Map<string, { completed: number, total: number, failed: number }>();
+  subCategoryFilteredTables$ = new Map<string, Observable<Table[]>>();
+  subCategoryTableDropdownOpen = new Map<string, boolean>();
+  subCategoryBulkCommandsVisible = new Map<string, boolean>();
+  private subCategoryUserTypingTable = new Map<string, boolean>();
 
   // Typeahead functionality
   filteredTables$!: Observable<Table[]>;
@@ -89,36 +110,94 @@ export class LinesComponent implements OnInit, OnChanges {
     )
   );
 
-  // Computed property for grouping lines by sub-category
-  groupedLines = computed(() => {
+  // Computed properties for cleaning operations
+  linesWithTable = computed(() => 
+    this.lines().filter(line => line.table_id || line.table_name)
+  );
+
+  linesWithColumn = computed(() => 
+    this.lines().filter(line => line.column_id || line.column_name)
+  );
+
+  // Sub-category specific computed properties
+  getSubCategoryLinesWithoutTable = (groupName: string): Line[] => {
+    const groupLines = this.groupedLines()[groupName] || [];
+    return groupLines.filter(line => !line.table_id && !line.table_name);
+  };
+
+  getSubCategoryLinesWithoutColumn = (groupName: string): Line[] => {
+    const groupLines = this.groupedLines()[groupName] || [];
+    return groupLines.filter(line => 
+      line.table_id && !line.column_id && line.field_name
+    );
+  };
+
+  getSubCategoryLinesWithTable = (groupName: string): Line[] => {
+    const groupLines = this.groupedLines()[groupName] || [];
+    return groupLines.filter(line => line.table_id || line.table_name);
+  };
+
+  getSubCategoryLinesWithColumn = (groupName: string): Line[] => {
+    const groupLines = this.groupedLines()[groupName] || [];
+    return groupLines.filter(line => line.column_id || line.column_name);
+  };
+
+  // Computed property for grouping lines by sub-category with sorting info
+  groupedLinesWithSorting = computed(() => {
     if (!this.groupBySubCategory()) {
-      return { 'All Lines': this.lines() };
+      return { groups: { 'All Lines': this.lines() }, groupOrder: ['All Lines'] };
     }
 
-    const grouped = new Map<string, Line[]>();
+    console.log('Grouping lines by sub-category...');
+    console.log('Lines with sub_category_id:', this.lines().filter(line => line.sub_category_id));
+    console.log('Available sub-categories:', this.subCategories());
+
+    const grouped = new Map<string, { lines: Line[], subCategoryId: number | null }>();
     
     this.lines().forEach(line => {
       const subCategoryId = line.sub_category_id;
       let groupKey = 'Uncategorized';
+      let actualSubCategoryId: number | null = null;
       
       if (subCategoryId) {
         const subCategory = this.subCategories().find(sc => sc.id === subCategoryId);
         groupKey = subCategory ? subCategory.name : `Sub-category ${subCategoryId}`;
+        actualSubCategoryId = subCategoryId;
+        console.log(`Line ${line.id} (${line.name}) -> Sub-category: ${subCategoryId} -> Group: ${groupKey}`);
+      } else {
+        console.log(`Line ${line.id} (${line.name}) -> No sub_category_id -> Group: ${groupKey}`);
       }
       
       if (!grouped.has(groupKey)) {
-        grouped.set(groupKey, []);
+        grouped.set(groupKey, { lines: [], subCategoryId: actualSubCategoryId });
       }
-      grouped.get(groupKey)!.push(line);
+      grouped.get(groupKey)!.lines.push(line);
     });
 
     // Convert Map to object for easier template iteration
-    const result: { [key: string]: Line[] } = {};
-    grouped.forEach((lines, key) => {
-      result[key] = lines;
+    const groups: { [key: string]: Line[] } = {};
+    grouped.forEach((data, key) => {
+      groups[key] = data.lines;
     });
+
+    // Sort groups by sub-category ID (null/undefined IDs go last)
+    const groupOrder = Array.from(grouped.entries())
+      .sort(([, a], [, b]) => {
+        if (a.subCategoryId === null && b.subCategoryId === null) return 0;
+        if (a.subCategoryId === null) return 1;
+        if (b.subCategoryId === null) return -1;
+        return a.subCategoryId - b.subCategoryId;
+      })
+      .map(([key]) => key);
     
-    return result;
+    console.log('Final grouped result:', groups);
+    console.log('Group order by ID:', groupOrder);
+    return { groups, groupOrder };
+  });
+
+  // Computed property for grouping lines by sub-category (for backward compatibility)
+  groupedLines = computed(() => {
+    return this.groupedLinesWithSorting().groups;
   });
 
   constructor(
@@ -215,6 +294,24 @@ export class LinesComponent implements OnInit, OnChanges {
     );
   }
 
+  private setupSubCategoryFilteredObservables(groupName: string): void {
+    const form = this.subCategoryBulkUpdateForms.get(groupName);
+    if (form) {
+      this.subCategoryFilteredTables$.set(
+        groupName,
+        form.get('table_name')!.valueChanges.pipe(
+          startWith(''),
+          map(value => {
+            if (!this.subCategoryTableDropdownOpen.get(groupName)) {
+              return [];
+            }
+            return this.filterTables(value || '');
+          })
+        )
+      );
+    }
+  }
+
   private filterTables(value: string): Table[] {
     const filterValue = value.toLowerCase();
     return this.tables().filter(table =>
@@ -254,8 +351,92 @@ export class LinesComponent implements OnInit, OnChanges {
   }
 
   getGroupKeys(): string[] {
-    return Object.keys(this.groupedLines());
+    return this.groupedLinesWithSorting().groupOrder;
   }
+
+  // Sub-category state getters
+  getSubCategoryBulkUpdateForm(groupName: string): FormGroup {
+    if (!this.subCategoryBulkUpdateForms.has(groupName)) {
+      this.subCategoryBulkUpdateForms.set(groupName, this.fb.group({
+        table_name: ['']
+      }));
+      this.setupSubCategoryFilteredObservables(groupName);
+    }
+    return this.subCategoryBulkUpdateForms.get(groupName)!;
+  }
+
+  getSubCategoryBulkUpdating(groupName: string): boolean {
+    return this.subCategoryBulkUpdating.get(groupName) || false;
+  }
+
+  getSubCategoryBulkUpdatingColumns(groupName: string): boolean {
+    return this.subCategoryBulkUpdatingColumns.get(groupName) || false;
+  }
+
+  getSubCategoryBulkClearingTables(groupName: string): boolean {
+    return this.subCategoryBulkClearingTables.get(groupName) || false;
+  }
+
+  getSubCategoryBulkClearingColumns(groupName: string): boolean {
+    return this.subCategoryBulkClearingColumns.get(groupName) || false;
+  }
+
+  getSubCategorySelectedTableId(groupName: string): number | null {
+    return this.subCategorySelectedTableIds.get(groupName) || null;
+  }
+
+  getSubCategoryBulkUpdateProgress(groupName: string): { completed: number, total: number, failed: number } {
+    return this.subCategoryBulkUpdateProgress.get(groupName) || { completed: 0, total: 0, failed: 0 };
+  }
+
+  getSubCategoryColumnBulkUpdateProgress(groupName: string): { completed: number, total: number, failed: number } {
+    return this.subCategoryColumnBulkUpdateProgress.get(groupName) || { completed: 0, total: 0, failed: 0 };
+  }
+
+  getSubCategoryTableClearProgress(groupName: string): { completed: number, total: number, failed: number } {
+    return this.subCategoryTableClearProgress.get(groupName) || { completed: 0, total: 0, failed: 0 };
+  }
+
+  getSubCategoryColumnClearProgress(groupName: string): { completed: number, total: number, failed: number } {
+    return this.subCategoryColumnClearProgress.get(groupName) || { completed: 0, total: 0, failed: 0 };
+  }
+
+  getSubCategoryFilteredTables$(groupName: string): Observable<Table[]> {
+    return this.subCategoryFilteredTables$.get(groupName) || of([]);
+  }
+
+  getSubCategoryTableDropdownOpen(groupName: string): boolean {
+    return this.subCategoryTableDropdownOpen.get(groupName) || false;
+  }
+
+  getSubCategoryBulkCommandsVisible(groupName: string): boolean {
+    return this.subCategoryBulkCommandsVisible.get(groupName) || false;
+  }
+
+  toggleSubCategoryBulkCommands(groupName: string): void {
+    const currentVisibility = this.subCategoryBulkCommandsVisible.get(groupName) || false;
+    this.subCategoryBulkCommandsVisible.set(groupName, !currentVisibility);
+  }
+
+  hasSubCategoryBulkCommands(groupName: string): boolean {
+    return this.getSubCategoryLinesWithoutTable(groupName).length > 0 || 
+           this.getSubCategoryLinesWithoutColumn(groupName).length > 0 || 
+           this.getSubCategoryLinesWithTable(groupName).length > 0 || 
+           this.getSubCategoryLinesWithColumn(groupName).length > 0;
+  }
+
+  // Category bulk commands toggle
+  toggleCategoryBulkCommands(): void {
+    this.categoryBulkCommandsVisible.set(!this.categoryBulkCommandsVisible());
+  }
+
+  hasCategoryBulkCommands(): boolean {
+    return this.linesWithoutTable().length > 0 || 
+           this.linesWithoutColumn().length > 0 || 
+           this.linesWithTable().length > 0 || 
+           this.linesWithColumn().length > 0;
+  }
+
 
   getStatusColor(status: string | undefined): string {
     switch (status) {
@@ -264,6 +445,29 @@ export class LinesComponent implements OnInit, OnChanges {
       case 'pending': return 'accent';
       default: return '';
     }
+  }
+
+  // Method to determine if a line needs highlighting
+  needsHighlighting(line: Line): boolean {
+    return !line.table_id && !line.table_name;
+  }
+
+  // Method to determine if a line needs column highlighting
+  needsColumnHighlighting(line: Line): boolean {
+    return !!(line.table_id || line.table_name) && !line.column_id && !line.column_name && !!line.field_name;
+  }
+
+  // Method to get CSS classes for highlighting
+  getRowClasses(line: Line): string {
+    const baseClasses = 'clickable-row';
+    if (this.needsHighlighting(line)) {
+      console.log(`Line ${line.id} needs table highlighting:`, line);
+      return `${baseClasses} highlight-missing-table test-highlight`;
+    } else if (this.needsColumnHighlighting(line)) {
+      console.log(`Line ${line.id} needs column highlighting:`, line);
+      return `${baseClasses} highlight-missing-column test-highlight`;
+    }
+    return baseClasses;
   }
 
   openEditDialog(line: Line): void {
@@ -320,6 +524,33 @@ export class LinesComponent implements OnInit, OnChanges {
       return table;
     }
     return table ? `${table.name} - ${table.description}` : '';
+  }
+
+  // Sub-category event handlers
+  onSubCategoryTableInputFocus(groupName: string): void {
+    if (this.subCategoryUserTypingTable.get(groupName)) {
+      this.subCategoryTableDropdownOpen.set(groupName, true);
+      this.getSubCategoryBulkUpdateForm(groupName).get('table_name')?.updateValueAndValidity();
+    }
+  }
+
+  onSubCategoryTableInputBlur(groupName: string): void {
+    setTimeout(() => {
+      this.subCategoryTableDropdownOpen.set(groupName, false);
+    }, 150);
+  }
+
+  onSubCategoryTableInputChange(groupName: string): void {
+    this.subCategoryUserTypingTable.set(groupName, true);
+    this.subCategoryTableDropdownOpen.set(groupName, true);
+    this.getSubCategoryBulkUpdateForm(groupName).get('table_name')?.updateValueAndValidity();
+  }
+
+  onSubCategoryTableSelected(groupName: string, table: Table): void {
+    this.getSubCategoryBulkUpdateForm(groupName).patchValue({ table_name: table });
+    this.subCategorySelectedTableIds.set(groupName, table.id);
+    this.subCategoryUserTypingTable.set(groupName, false);
+    this.subCategoryTableDropdownOpen.set(groupName, false);
   }
 
   bulkUpdateTableForLines(): void {
@@ -561,5 +792,494 @@ export class LinesComponent implements OnInit, OnChanges {
         return { updated, failed };
       })
     );
+  }
+
+  // Bulk clear table names for all lines
+  bulkClearTableNames(): void {
+    const linesToClear = this.linesWithTable();
+    
+    if (linesToClear.length === 0) {
+      this.snackBar.open('No lines with table assignments found to clear', 'Close', {
+        duration: 3000,
+        horizontalPosition: 'right',
+        verticalPosition: 'top'
+      });
+      return;
+    }
+
+    this.bulkClearingTables.set(true);
+    this.tableClearProgress.set({ completed: 0, total: linesToClear.length, failed: 0 });
+
+    // Clear table names individually
+    this.clearTableNamesIndividually(linesToClear);
+  }
+
+  private clearTableNamesIndividually(linesToClear: Line[]): void {
+    const clearRequests = linesToClear.map(line => 
+      this.apiService.clearLineTable(line.id).pipe(
+        catchError(error => {
+          console.error(`Error clearing table for line ${line.id}:`, error);
+          return of({ error: true, lineId: line.id });
+        })
+      )
+    );
+
+    forkJoin(clearRequests).subscribe({
+      next: (results) => {
+        this.bulkClearingTables.set(false);
+        
+        const successful = results.filter(result => !result.error);
+        const failed = results.filter(result => result.error);
+        
+        this.tableClearProgress.set({ 
+          completed: successful.length, 
+          total: linesToClear.length, 
+          failed: failed.length 
+        });
+
+        if (successful.length > 0) {
+          this.snackBar.open(
+            `Successfully cleared table names for ${successful.length} line(s)${failed.length > 0 ? `, ${failed.length} failed` : ''}`, 
+            'Close', 
+            {
+              duration: 5000,
+              horizontalPosition: 'right',
+              verticalPosition: 'top'
+            }
+          );
+        } else {
+          this.snackBar.open('Failed to clear table names for any lines', 'Close', {
+            duration: 3000,
+            horizontalPosition: 'right',
+            verticalPosition: 'top'
+          });
+        }
+        
+        this.refreshLines();
+      },
+      error: (error) => {
+        console.error('Error in bulk table clear:', error);
+        this.bulkClearingTables.set(false);
+        this.snackBar.open('Error clearing table names. Please try again.', 'Close', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      }
+    });
+  }
+
+  // Bulk clear column names for all lines
+  bulkClearColumnNames(): void {
+    const linesToClear = this.linesWithColumn();
+    
+    if (linesToClear.length === 0) {
+      this.snackBar.open('No lines with column assignments found to clear', 'Close', {
+        duration: 3000,
+        horizontalPosition: 'right',
+        verticalPosition: 'top'
+      });
+      return;
+    }
+
+    this.bulkClearingColumns.set(true);
+    this.columnClearProgress.set({ completed: 0, total: linesToClear.length, failed: 0 });
+
+    // Clear column names individually
+    this.clearColumnNamesIndividually(linesToClear);
+  }
+
+  private clearColumnNamesIndividually(linesToClear: Line[]): void {
+    const clearRequests = linesToClear.map(line => 
+      this.apiService.clearLineColumn(line.id).pipe(
+        catchError(error => {
+          console.error(`Error clearing column for line ${line.id}:`, error);
+          return of({ error: true, lineId: line.id });
+        })
+      )
+    );
+
+    forkJoin(clearRequests).subscribe({
+      next: (results) => {
+        this.bulkClearingColumns.set(false);
+        
+        const successful = results.filter(result => !result.error);
+        const failed = results.filter(result => result.error);
+        
+        this.columnClearProgress.set({ 
+          completed: successful.length, 
+          total: linesToClear.length, 
+          failed: failed.length 
+        });
+
+        if (successful.length > 0) {
+          this.snackBar.open(
+            `Successfully cleared column names for ${successful.length} line(s)${failed.length > 0 ? `, ${failed.length} failed` : ''}`, 
+            'Close', 
+            {
+              duration: 5000,
+              horizontalPosition: 'right',
+              verticalPosition: 'top'
+            }
+          );
+        } else {
+          this.snackBar.open('Failed to clear column names for any lines', 'Close', {
+            duration: 3000,
+            horizontalPosition: 'right',
+            verticalPosition: 'top'
+          });
+        }
+        
+        this.refreshLines();
+      },
+      error: (error) => {
+        console.error('Error in bulk column clear:', error);
+        this.bulkClearingColumns.set(false);
+        this.snackBar.open('Error clearing column names. Please try again.', 'Close', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      }
+    });
+  }
+
+  // Sub-category bulk update methods
+  bulkUpdateTableForSubCategory(groupName: string): void {
+    const categoryId = this.categoryId;
+    const formValue = this.getSubCategoryBulkUpdateForm(groupName).value;
+    
+    // Get table_id from the selected object
+    const tableId = typeof formValue.table_name === 'object' 
+      ? formValue.table_name?.id 
+      : this.tables().find(t => t.name === formValue.table_name)?.id;
+    
+    if (!categoryId || !tableId) {
+      this.snackBar.open('Please select a table first', 'Close', {
+        duration: 3000,
+        horizontalPosition: 'right',
+        verticalPosition: 'top'
+      });
+      return;
+    }
+
+    const linesToUpdate = this.getSubCategoryLinesWithoutTable(groupName);
+    if (linesToUpdate.length === 0) {
+      this.snackBar.open('No lines without table found to update in this sub-category', 'Close', {
+        duration: 3000,
+        horizontalPosition: 'right',
+        verticalPosition: 'top'
+      });
+      return;
+    }
+
+    this.subCategoryBulkUpdating.set(groupName, true);
+    this.subCategoryBulkUpdateProgress.set(groupName, { completed: 0, total: linesToUpdate.length, failed: 0 });
+
+    // Update lines individually with only table_id
+    this.updateSubCategoryLinesIndividually(groupName, linesToUpdate, tableId);
+  }
+
+  private updateSubCategoryLinesIndividually(groupName: string, linesToUpdate: Line[], tableId: number): void {
+    // Create an array of update requests - only update table_id
+    const updateRequests = linesToUpdate.map(line => 
+      this.apiService.updateLineTable(line.id, tableId).pipe(
+        catchError(error => {
+          console.error(`Error updating line ${line.id}:`, error);
+          return of({ error: true, lineId: line.id });
+        })
+      )
+    );
+
+    // Execute all requests in parallel
+    forkJoin(updateRequests).subscribe({
+      next: (results) => {
+        this.subCategoryBulkUpdating.set(groupName, false);
+        
+        const successful = results.filter(result => !result.error);
+        const failed = results.filter(result => result.error);
+        
+        this.subCategoryBulkUpdateProgress.set(groupName, { 
+          completed: successful.length, 
+          total: linesToUpdate.length, 
+          failed: failed.length 
+        });
+
+        // Show success message
+        if (successful.length > 0) {
+          this.snackBar.open(
+            `Successfully updated ${successful.length} line(s) in ${groupName}${failed.length > 0 ? `, ${failed.length} failed` : ''}`, 
+            'Close', 
+            {
+              duration: 5000,
+              horizontalPosition: 'right',
+              verticalPosition: 'top'
+            }
+          );
+        } else {
+          this.snackBar.open(`Failed to update any lines in ${groupName}`, 'Close', {
+            duration: 3000,
+            horizontalPosition: 'right',
+            verticalPosition: 'top'
+          });
+        }
+        
+        // Clear the form and refresh the lines
+        this.getSubCategoryBulkUpdateForm(groupName).patchValue({ table_name: '' });
+        this.subCategorySelectedTableIds.set(groupName, null);
+        this.refreshLines();
+      },
+      error: (error) => {
+        console.error('Error in sub-category bulk update:', error);
+        this.subCategoryBulkUpdating.set(groupName, false);
+        this.snackBar.open(`Error updating lines in ${groupName}. Please try again.`, 'Close', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      }
+    });
+  }
+
+  bulkUpdateColumnsForSubCategory(groupName: string): void {
+    const linesToUpdate = this.getSubCategoryLinesWithoutColumn(groupName);
+    
+    if (linesToUpdate.length === 0) {
+      this.snackBar.open(`No lines found in ${groupName} that need column updates`, 'Close', {
+        duration: 3000,
+        horizontalPosition: 'right',
+        verticalPosition: 'top'
+      });
+      return;
+    }
+
+    this.subCategoryBulkUpdatingColumns.set(groupName, true);
+    this.subCategoryColumnBulkUpdateProgress.set(groupName, { completed: 0, total: linesToUpdate.length, failed: 0 });
+
+    // Group lines by table_id to load columns for each table
+    const linesByTable = this.groupLinesByTable(linesToUpdate);
+    this.updateSubCategoryColumnsForTables(groupName, linesByTable);
+  }
+
+  private updateSubCategoryColumnsForTables(groupName: string, linesByTable: Map<number, Line[]>): void {
+    const tableIds = Array.from(linesByTable.keys());
+    const columnRequests = tableIds.map(tableId => 
+      this.apiService.getColumnsByTable(tableId).pipe(
+        map(columns => ({ tableId, columns, error: false })),
+        catchError(error => {
+          console.error(`Error loading columns for table ${tableId}:`, error);
+          return of({ tableId, columns: [], error: true });
+        })
+      )
+    );
+
+    forkJoin(columnRequests).subscribe({
+      next: (results) => {
+        const updateRequests = results.map(result => {
+          if (result.error) {
+            const linesForTable = linesByTable.get(result.tableId) || [];
+            return of({ updated: 0, failed: linesForTable.length });
+          }
+
+          const linesForTable = linesByTable.get(result.tableId) || [];
+          return this.updateColumnsForTable(linesForTable, result.columns);
+        });
+
+        forkJoin(updateRequests).subscribe({
+          next: (updateResults) => {
+            const totalUpdated = updateResults.reduce((sum, result) => sum + result.updated, 0);
+            const totalFailed = updateResults.reduce((sum, result) => sum + result.failed, 0);
+
+            this.subCategoryBulkUpdatingColumns.set(groupName, false);
+            this.subCategoryColumnBulkUpdateProgress.set(groupName, { 
+              completed: totalUpdated, 
+              total: linesByTable.size > 0 ? Array.from(linesByTable.values()).flat().length : 0, 
+              failed: totalFailed 
+            });
+
+            this.snackBar.open(
+              `Successfully updated ${totalUpdated} column(s) in ${groupName}${totalFailed > 0 ? `, ${totalFailed} failed` : ''}`, 
+              'Close', 
+              {
+                duration: 5000,
+                horizontalPosition: 'right',
+                verticalPosition: 'top'
+              }
+            );
+
+            // Refresh the lines to show updated data
+            this.refreshLines();
+          },
+          error: (error) => {
+            console.error('Error in sub-category column updates:', error);
+            this.subCategoryBulkUpdatingColumns.set(groupName, false);
+            this.snackBar.open(`Error updating columns in ${groupName}. Please try again.`, 'Close', {
+              duration: 3000,
+              horizontalPosition: 'right',
+              verticalPosition: 'top'
+            });
+          }
+        });
+      },
+      error: (error) => {
+        console.error('Error in sub-category column bulk update:', error);
+        this.subCategoryBulkUpdatingColumns.set(groupName, false);
+        this.snackBar.open(`Error loading columns for ${groupName}. Please try again.`, 'Close', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      }
+    });
+  }
+
+  // Sub-category bulk clear table names
+  bulkClearTableNamesForSubCategory(groupName: string): void {
+    const linesToClear = this.getSubCategoryLinesWithTable(groupName);
+    
+    if (linesToClear.length === 0) {
+      this.snackBar.open(`No lines with table assignments found to clear in ${groupName}`, 'Close', {
+        duration: 3000,
+        horizontalPosition: 'right',
+        verticalPosition: 'top'
+      });
+      return;
+    }
+
+    this.subCategoryBulkClearingTables.set(groupName, true);
+    this.subCategoryTableClearProgress.set(groupName, { completed: 0, total: linesToClear.length, failed: 0 });
+
+    // Clear table names individually
+    this.clearSubCategoryTableNamesIndividually(groupName, linesToClear);
+  }
+
+  private clearSubCategoryTableNamesIndividually(groupName: string, linesToClear: Line[]): void {
+    const clearRequests = linesToClear.map(line => 
+      this.apiService.clearLineTable(line.id).pipe(
+        catchError(error => {
+          console.error(`Error clearing table for line ${line.id}:`, error);
+          return of({ error: true, lineId: line.id });
+        })
+      )
+    );
+
+    forkJoin(clearRequests).subscribe({
+      next: (results) => {
+        this.subCategoryBulkClearingTables.set(groupName, false);
+        
+        const successful = results.filter(result => !result.error);
+        const failed = results.filter(result => result.error);
+        
+        this.subCategoryTableClearProgress.set(groupName, { 
+          completed: successful.length, 
+          total: linesToClear.length, 
+          failed: failed.length 
+        });
+
+        if (successful.length > 0) {
+          this.snackBar.open(
+            `Successfully cleared table names for ${successful.length} line(s) in ${groupName}${failed.length > 0 ? `, ${failed.length} failed` : ''}`, 
+            'Close', 
+            {
+              duration: 5000,
+              horizontalPosition: 'right',
+              verticalPosition: 'top'
+            }
+          );
+        } else {
+          this.snackBar.open(`Failed to clear table names for any lines in ${groupName}`, 'Close', {
+            duration: 3000,
+            horizontalPosition: 'right',
+            verticalPosition: 'top'
+          });
+        }
+        
+        this.refreshLines();
+      },
+      error: (error) => {
+        console.error('Error in sub-category bulk table clear:', error);
+        this.subCategoryBulkClearingTables.set(groupName, false);
+        this.snackBar.open(`Error clearing table names in ${groupName}. Please try again.`, 'Close', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      }
+    });
+  }
+
+  // Sub-category bulk clear column names
+  bulkClearColumnNamesForSubCategory(groupName: string): void {
+    const linesToClear = this.getSubCategoryLinesWithColumn(groupName);
+    
+    if (linesToClear.length === 0) {
+      this.snackBar.open(`No lines with column assignments found to clear in ${groupName}`, 'Close', {
+        duration: 3000,
+        horizontalPosition: 'right',
+        verticalPosition: 'top'
+      });
+      return;
+    }
+
+    this.subCategoryBulkClearingColumns.set(groupName, true);
+    this.subCategoryColumnClearProgress.set(groupName, { completed: 0, total: linesToClear.length, failed: 0 });
+
+    // Clear column names individually
+    this.clearSubCategoryColumnNamesIndividually(groupName, linesToClear);
+  }
+
+  private clearSubCategoryColumnNamesIndividually(groupName: string, linesToClear: Line[]): void {
+    const clearRequests = linesToClear.map(line => 
+      this.apiService.clearLineColumn(line.id).pipe(
+        catchError(error => {
+          console.error(`Error clearing column for line ${line.id}:`, error);
+          return of({ error: true, lineId: line.id });
+        })
+      )
+    );
+
+    forkJoin(clearRequests).subscribe({
+      next: (results) => {
+        this.subCategoryBulkClearingColumns.set(groupName, false);
+        
+        const successful = results.filter(result => !result.error);
+        const failed = results.filter(result => result.error);
+        
+        this.subCategoryColumnClearProgress.set(groupName, { 
+          completed: successful.length, 
+          total: linesToClear.length, 
+          failed: failed.length 
+        });
+
+        if (successful.length > 0) {
+          this.snackBar.open(
+            `Successfully cleared column names for ${successful.length} line(s) in ${groupName}${failed.length > 0 ? `, ${failed.length} failed` : ''}`, 
+            'Close', 
+            {
+              duration: 5000,
+              horizontalPosition: 'right',
+              verticalPosition: 'top'
+            }
+          );
+        } else {
+          this.snackBar.open(`Failed to clear column names for any lines in ${groupName}`, 'Close', {
+            duration: 3000,
+            horizontalPosition: 'right',
+            verticalPosition: 'top'
+          });
+        }
+        
+        this.refreshLines();
+      },
+      error: (error) => {
+        console.error('Error in sub-category bulk column clear:', error);
+        this.subCategoryBulkClearingColumns.set(groupName, false);
+        this.snackBar.open(`Error clearing column names in ${groupName}. Please try again.`, 'Close', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      }
+    });
   }
 }

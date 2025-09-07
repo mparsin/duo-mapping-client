@@ -83,6 +83,117 @@
   background-color: #e3f2fd !important;
 }
 
+/* Highlighting for lines missing table or column */
+.lines-table tr.highlight-missing-table {
+  background-color: #fff3cd !important;
+  border-left: 4px solid #ffc107 !important;
+  animation: pulse-warning 2s infinite;
+}
+
+.lines-table tr.highlight-missing-table:hover {
+  background-color: #ffeaa7 !important;
+}
+
+.lines-table tr.highlight-missing-column {
+  background-color: #d1ecf1 !important;
+  border-left: 4px solid #17a2b8 !important;
+  animation: pulse-info 2s infinite;
+}
+
+.lines-table tr.highlight-missing-column:hover {
+  background-color: #bee5eb !important;
+}
+
+/* Additional specificity for sub-category groups */
+.sub-category-group .lines-table tr.highlight-missing-table {
+  background-color: #fff3cd !important;
+  border-left: 4px solid #ffc107 !important;
+}
+
+.sub-category-group .lines-table tr.highlight-missing-table:hover {
+  background-color: #ffeaa7 !important;
+}
+
+.sub-category-group .lines-table tr.highlight-missing-column {
+  background-color: #d1ecf1 !important;
+  border-left: 4px solid #17a2b8 !important;
+}
+
+.sub-category-group .lines-table tr.highlight-missing-column:hover {
+  background-color: #bee5eb !important;
+}
+
+/* Force highlighting with maximum specificity */
+.mat-mdc-table .mat-mdc-row.highlight-missing-table {
+  background-color: #fff3cd !important;
+  border-left: 4px solid #ffc107 !important;
+}
+
+.mat-mdc-table .mat-mdc-row.highlight-missing-table:hover {
+  background-color: #ffeaa7 !important;
+}
+
+.mat-mdc-table .mat-mdc-row.highlight-missing-column {
+  background-color: #d1ecf1 !important;
+  border-left: 4px solid #17a2b8 !important;
+}
+
+.mat-mdc-table .mat-mdc-row.highlight-missing-column:hover {
+  background-color: #bee5eb !important;
+}
+
+/* Even more specific for Angular Material tables */
+table.mat-mdc-table tr.mat-mdc-row.highlight-missing-table {
+  background-color: #fff3cd !important;
+  border-left: 4px solid #ffc107 !important;
+}
+
+table.mat-mdc-table tr.mat-mdc-row.highlight-missing-column {
+  background-color: #d1ecf1 !important;
+  border-left: 4px solid #17a2b8 !important;
+}
+
+/* Ultra-specific targeting for debugging */
+tr[data-line-id].highlight-missing-table {
+  background-color: #ff0000 !important;
+  border: 3px solid #ff0000 !important;
+}
+
+tr[data-line-id].highlight-missing-column {
+  background-color: #0000ff !important;
+  border: 3px solid #0000ff !important;
+}
+
+/* Test highlight class */
+.test-highlight {
+  background-color: #00ff00 !important;
+  border: 2px solid #00ff00 !important;
+}
+
+@keyframes pulse-warning {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(255, 193, 7, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 193, 7, 0);
+  }
+}
+
+@keyframes pulse-info {
+  0% {
+    box-shadow: 0 0 0 0 rgba(23, 162, 184, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(23, 162, 184, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(23, 162, 184, 0);
+  }
+}
+
 /* Bulk Update Section Styles */
 .bulk-update-card {
   margin-bottom: 24px;
@@ -94,13 +205,48 @@
   margin-bottom: 16px;
 }
 
+.mat-mdc-card-header {
+  padding: 6px;
+}
+
+.bulk-update-card ::ng-deep .mat-mdc-card-header-text {
+  width: 100%;
+
+}
+
 .bulk-update-card .mat-card-title {
-  display: flex;
+  display: flex !important;
   align-items: center;
-  gap: 8px;
   color: #495057;
   font-size: 1.1rem;
   font-weight: 600;
+  justify-content: space-between;
+  width: 100%;
+  flex-wrap: nowrap;
+  position: relative;
+}
+
+.bulk-update-card .title-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.bulk-commands-toggle.category-toggle {
+  flex-shrink: 0;
+  margin-left: auto;
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  background-color: #e3f2fd !important;
+  border: 1px solid #1976d2 !important;
+  border-radius: 50% !important;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
 }
 
 .bulk-update-card .mat-card-subtitle {
@@ -277,7 +423,7 @@
   align-items: center;
   gap: 12px;
   padding: 16px 20px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  background-color: #FCD5B4;
   border-bottom: 1px solid #dee2e6;
   font-weight: 600;
 }
@@ -295,6 +441,60 @@
   font-size: 1.1rem;
   font-weight: 600;
   flex: 1;
+}
+
+.bulk-commands-toggle {
+  color: #1976d2;
+  transition: all 0.3s ease;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bulk-commands-toggle:hover {
+  background-color: rgba(25, 118, 210, 0.1);
+  color: #1565c0;
+}
+
+.bulk-commands-toggle.expanded {
+  background-color: rgba(25, 118, 210, 0.15);
+  color: #1565c0;
+}
+
+.bulk-commands-toggle mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  transition: transform 0.3s ease;
+}
+
+.bulk-commands-toggle.expanded mat-icon {
+  transform: rotate(180deg);
+}
+
+.bulk-commands-toggle.has-bulk-commands {
+  position: relative;
+}
+
+.bulk-commands-toggle.has-bulk-commands::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  background-color: #ff9800;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 0 1px #ff9800;
+}
+
+.bulk-commands-toggle.has-bulk-commands.expanded::after {
+  background-color: #4caf50;
+  box-shadow: 0 0 0 1px #4caf50;
 }
 
 .line-count {
@@ -329,28 +529,134 @@
   border-bottom: none;
 }
 
+/* Sub-category bulk update card styles */
+.sub-category-bulk-update-card {
+  margin: 16px 20px 24px 20px;
+  background: linear-gradient(135deg, #e8f4fd 0%, #d1e7dd 100%);
+  border: 1px solid #b8daff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.sub-category-bulk-update-card .mat-card-header {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #b8daff;
+}
+
+.sub-category-bulk-update-card .mat-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #0c5460;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.sub-category-bulk-update-card .mat-card-subtitle {
+  color: #6c757d;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+.sub-category-bulk-update-card .mat-card-content {
+  padding-top: 0;
+}
+
+.sub-category-bulk-update-card .bulk-update-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.sub-category-bulk-update-card .table-selector {
+  min-width: 180px;
+  flex: 1;
+}
+
+.sub-category-bulk-update-card .bulk-update-button {
+  min-width: 160px;
+  height: 40px;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.sub-category-bulk-update-card .bulk-update-description {
+  color: #6c757d;
+  font-size: 0.85rem;
+  margin: 0;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.sub-category-bulk-update-card .command-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 180px;
+}
+
+.sub-category-bulk-update-card .command-title {
+  font-weight: 500;
+  color: #495057;
+  font-size: 0.9rem;
+}
+
+.sub-category-bulk-update-card .command-info mat-icon {
+  color: #6c757d;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.sub-category-bulk-update-card .command-divider {
+  margin: 16px 0 12px 0;
+  border-color: #b8daff;
+}
+
+.sub-category-bulk-update-card .bulk-update-progress {
+  margin-top: 12px;
+  padding: 12px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #b8daff;
+}
+
+.sub-category-bulk-update-card .progress-text {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #495057;
+  text-align: center;
+}
+
 
 @media (max-width: 768px) {
   .content {
     padding: 16px;
   }
-  
+
   .lines-table {
     font-size: 0.875rem;
   }
-  
+
   .lines-table .mat-column-description {
     display: none;
   }
-  
+
   .lines-table .mat-column-value {
     display: none;
   }
-  
+
   .lines-table .mat-column-table_name {
     display: none;
   }
-  
+
   .lines-table .mat-column-column_name {
     display: none;
   }

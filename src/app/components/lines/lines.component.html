@@ -50,24 +50,39 @@
       </div>
     } @else {
       <!-- Bulk Update Section -->
-      @if (linesWithoutTable().length > 0 || linesWithoutColumn().length > 0) {
+      @if (linesWithoutTable().length > 0 || linesWithoutColumn().length > 0 || linesWithTable().length > 0 || linesWithColumn().length > 0) {
         <mat-card class="bulk-update-card">
           <mat-card-header>
             <mat-card-title>
-              <mat-icon>batch_prediction</mat-icon>
-              Bulk Update Commands
+              <div class="title-left">
+                <mat-icon>batch_prediction</mat-icon>
+                <span>Bulk Update Commands</span>
+                <button
+                  mat-icon-button
+                  (click)="toggleCategoryBulkCommands()"
+                  [class.expanded]="categoryBulkCommandsVisible()"
+                  [class.has-bulk-commands]="hasCategoryBulkCommands()"
+                  class="bulk-commands-toggle category-toggle"
+                  [attr.aria-label]="categoryBulkCommandsVisible() ? 'Hide bulk commands' : 'Show bulk commands'">
+                  <mat-icon>{{ categoryBulkCommandsVisible() ? 'expand_less' : 'expand_more' }}</mat-icon>
+                </button>
+              </div>
+
             </mat-card-title>
             <mat-card-subtitle>
               @if (linesWithoutTable().length > 0 && linesWithoutColumn().length > 0) {
                 {{ linesWithoutTable().length }} line(s) without table, {{ linesWithoutColumn().length }} line(s) without column
               } @else if (linesWithoutTable().length > 0) {
                 {{ linesWithoutTable().length }} line(s) without table assignment
-              } @else {
+              } @else if (linesWithoutColumn().length > 0) {
                 {{ linesWithoutColumn().length }} line(s) without column assignment
+              } @else if (linesWithTable().length > 0 || linesWithColumn().length > 0) {
+                {{ linesWithTable().length }} line(s) with table, {{ linesWithColumn().length }} line(s) with column
               }
             </mat-card-subtitle>
           </mat-card-header>
-          <mat-card-content>
+          @if (categoryBulkCommandsVisible()) {
+            <mat-card-content>
             <form [formGroup]="bulkUpdateForm" class="bulk-update-form">
               <div class="bulk-update-controls">
                 <mat-form-field appearance="outline" class="table-selector">
@@ -95,10 +110,10 @@
                     }
                   </mat-autocomplete>
                 </mat-form-field>
-                
-                <button 
-                  mat-raised-button 
-                  color="primary" 
+
+                <button
+                  mat-raised-button
+                  color="primary"
                   [disabled]="!selectedTableId() || bulkUpdating()"
                   (click)="bulkUpdateTableForLines()"
                   class="bulk-update-button">
@@ -106,16 +121,18 @@
                     <mat-spinner diameter="20"></mat-spinner>
                     Updating {{ bulkUpdateProgress().completed }}/{{ bulkUpdateProgress().total }}...
                   } @else {
-                    <mat-icon>update</mat-icon>
-                    Set Table for All Lines
+                    <ng-container>
+                      <mat-icon>update</mat-icon>
+                      Set Table for All Lines
+                    </ng-container>
                   }
                 </button>
               </div>
             </form>
             @if (bulkUpdating()) {
               <div class="bulk-update-progress">
-                <mat-progress-bar 
-                  mode="determinate" 
+                <mat-progress-bar
+                  mode="determinate"
                   [value]="(bulkUpdateProgress().completed / bulkUpdateProgress().total) * 100">
                 </mat-progress-bar>
                 <p class="progress-text">
@@ -139,10 +156,10 @@
                   <mat-icon>view_column</mat-icon>
                   <span class="command-title">Update Columns by Field Name</span>
                 </div>
-                
-                <button 
-                  mat-raised-button 
-                  color="accent" 
+
+                <button
+                  mat-raised-button
+                  color="accent"
                   [disabled]="bulkUpdatingColumns()"
                   (click)="bulkUpdateColumnsForLines()"
                   class="bulk-update-button">
@@ -150,16 +167,18 @@
                     <mat-spinner diameter="20"></mat-spinner>
                     Updating {{ columnBulkUpdateProgress().completed }}/{{ columnBulkUpdateProgress().total }}...
                   } @else {
-                    <mat-icon>auto_fix_high</mat-icon>
-                    Match Columns by Field Name
+                    <ng-container>
+                      <mat-icon>auto_fix_high</mat-icon>
+                      Match Columns by Field Name
+                    </ng-container>
                   }
                 </button>
               </div>
-              
+
               @if (bulkUpdatingColumns()) {
                 <div class="bulk-update-progress">
-                  <mat-progress-bar 
-                    mode="determinate" 
+                  <mat-progress-bar
+                    mode="determinate"
                     [value]="(columnBulkUpdateProgress().completed / columnBulkUpdateProgress().total) * 100">
                   </mat-progress-bar>
                   <p class="progress-text">
@@ -175,9 +194,104 @@
                 </p>
               }
             }
-          </mat-card-content>
+
+            <!-- Clear Table Names Command -->
+            @if (linesWithTable().length > 0) {
+              <mat-divider class="command-divider"></mat-divider>
+              <div class="bulk-update-controls">
+                <div class="command-info">
+                  <mat-icon>clear_all</mat-icon>
+                  <span class="command-title">Clear All Table Names</span>
+                </div>
+
+                <button
+                  mat-raised-button
+                  color="warn"
+                  [disabled]="bulkClearingTables()"
+                  (click)="bulkClearTableNames()"
+                  class="bulk-update-button">
+                  @if (bulkClearingTables()) {
+                    <mat-spinner diameter="20"></mat-spinner>
+                    Clearing {{ tableClearProgress().completed }}/{{ tableClearProgress().total }}...
+                  } @else {
+                    <ng-container>
+                      <mat-icon>delete_sweep</mat-icon>
+                      Clear All Table Names
+                    </ng-container>
+                  }
+                </button>
+              </div>
+
+              @if (bulkClearingTables()) {
+                <div class="bulk-update-progress">
+                  <mat-progress-bar
+                    mode="determinate"
+                    [value]="(tableClearProgress().completed / tableClearProgress().total) * 100">
+                  </mat-progress-bar>
+                  <p class="progress-text">
+                    Cleared {{ tableClearProgress().completed }} of {{ tableClearProgress().total }} table names
+                    @if (tableClearProgress().failed > 0) {
+                      ({{ tableClearProgress().failed }} failed)
+                    }
+                  </p>
+                </div>
+              } @else {
+                <p class="bulk-update-description">
+                  This will clear table assignments for all {{ linesWithTable().length }} line(s) that currently have a table assigned.
+                </p>
+              }
+            }
+
+            <!-- Clear Column Names Command -->
+            @if (linesWithColumn().length > 0) {
+              <mat-divider class="command-divider"></mat-divider>
+              <div class="bulk-update-controls">
+                <div class="command-info">
+                  <mat-icon>clear_all</mat-icon>
+                  <span class="command-title">Clear All Column Names</span>
+                </div>
+
+                <button
+                  mat-raised-button
+                  color="warn"
+                  [disabled]="bulkClearingColumns()"
+                  (click)="bulkClearColumnNames()"
+                  class="bulk-update-button">
+                  @if (bulkClearingColumns()) {
+                    <mat-spinner diameter="20"></mat-spinner>
+                    Clearing {{ columnClearProgress().completed }}/{{ columnClearProgress().total }}...
+                  } @else {
+                    <ng-container>
+                      <mat-icon>delete_sweep</mat-icon>
+                      Clear All Column Names
+                    </ng-container>
+                  }
+                </button>
+              </div>
+
+              @if (bulkClearingColumns()) {
+                <div class="bulk-update-progress">
+                  <mat-progress-bar
+                    mode="determinate"
+                    [value]="(columnClearProgress().completed / columnClearProgress().total) * 100">
+                  </mat-progress-bar>
+                  <p class="progress-text">
+                    Cleared {{ columnClearProgress().completed }} of {{ columnClearProgress().total }} column names
+                    @if (columnClearProgress().failed > 0) {
+                      ({{ columnClearProgress().failed }} failed)
+                    }
+                  </p>
+                </div>
+              } @else {
+                <p class="bulk-update-description">
+                  This will clear column assignments for all {{ linesWithColumn().length }} line(s) that currently have a column assigned.
+                </p>
+              }
+            }
+            </mat-card-content>
+          }
         </mat-card>
-        
+
         <mat-divider class="section-divider"></mat-divider>
       }
 
@@ -191,8 +305,249 @@
                 <mat-icon>folder</mat-icon>
                 <h3>{{ group }}</h3>
                 <span class="line-count">{{ groupedLines()[group].length }} line(s)</span>
+                <button
+                  mat-icon-button
+                  (click)="toggleSubCategoryBulkCommands(group)"
+                  [class.expanded]="getSubCategoryBulkCommandsVisible(group)"
+                  [class.has-bulk-commands]="hasSubCategoryBulkCommands(group)"
+                  class="bulk-commands-toggle"
+                  [attr.aria-label]="getSubCategoryBulkCommandsVisible(group) ? 'Hide bulk commands' : 'Show bulk commands'">
+                  <mat-icon>{{ getSubCategoryBulkCommandsVisible(group) ? 'expand_less' : 'expand_more' }}</mat-icon>
+                </button>
               </div>
-              
+
+              <!-- Sub-category Bulk Update Section -->
+              @if ((getSubCategoryLinesWithoutTable(group).length > 0 || getSubCategoryLinesWithoutColumn(group).length > 0 || getSubCategoryLinesWithTable(group).length > 0 || getSubCategoryLinesWithColumn(group).length > 0) && getSubCategoryBulkCommandsVisible(group)) {
+                <mat-card class="sub-category-bulk-update-card">
+                  <mat-card-header>
+                    <mat-card-title>
+                      <mat-icon>batch_prediction</mat-icon>
+                      Bulk Update Commands for {{ group }}
+                    </mat-card-title>
+                    <mat-card-subtitle>
+                      @if (getSubCategoryLinesWithoutTable(group).length > 0 && getSubCategoryLinesWithoutColumn(group).length > 0) {
+                        {{ getSubCategoryLinesWithoutTable(group).length }} line(s) without table, {{ getSubCategoryLinesWithoutColumn(group).length }} line(s) without column
+                      } @else if (getSubCategoryLinesWithoutTable(group).length > 0) {
+                        {{ getSubCategoryLinesWithoutTable(group).length }} line(s) without table assignment
+                      } @else if (getSubCategoryLinesWithoutColumn(group).length > 0) {
+                        {{ getSubCategoryLinesWithoutColumn(group).length }} line(s) without column assignment
+                      } @else if (getSubCategoryLinesWithTable(group).length > 0 || getSubCategoryLinesWithColumn(group).length > 0) {
+                        {{ getSubCategoryLinesWithTable(group).length }} line(s) with table, {{ getSubCategoryLinesWithColumn(group).length }} line(s) with column
+                      }
+                    </mat-card-subtitle>
+                  </mat-card-header>
+                  <mat-card-content>
+                    <form [formGroup]="getSubCategoryBulkUpdateForm(group)" class="bulk-update-form">
+                      <div class="bulk-update-controls">
+                        <mat-form-field appearance="outline" class="table-selector">
+                          <mat-label>Select Table</mat-label>
+                          <input
+                            matInput
+                            formControlName="table_name"
+                            [matAutocomplete]="subCategoryTableAuto"
+                            placeholder="Type to search tables..."
+                            (focus)="onSubCategoryTableInputFocus(group)"
+                            (blur)="onSubCategoryTableInputBlur(group)"
+                            (input)="onSubCategoryTableInputChange(group)">
+                          <mat-autocomplete
+                            #subCategoryTableAuto="matAutocomplete"
+                            [displayWith]="displayTableName"
+                            (optionSelected)="onSubCategoryTableSelected(group, $event.option.value)"
+                            class="compact-autocomplete"
+                            [class.hide-dropdown]="!getSubCategoryTableDropdownOpen(group)">
+                            @if (getSubCategoryTableDropdownOpen(group)) {
+                              @for (table of getSubCategoryFilteredTables$(group) | async; track table.id) {
+                                <mat-option [value]="table" class="compact-option">
+                                  {{ table.name }} - {{ table.description }}
+                                </mat-option>
+                              }
+                            }
+                          </mat-autocomplete>
+                        </mat-form-field>
+
+                        <button
+                          mat-raised-button
+                          color="primary"
+                          [disabled]="!getSubCategorySelectedTableId(group) || getSubCategoryBulkUpdating(group)"
+                          (click)="bulkUpdateTableForSubCategory(group)"
+                          class="bulk-update-button">
+                          @if (getSubCategoryBulkUpdating(group)) {
+                            <mat-spinner diameter="20"></mat-spinner>
+                            Updating {{ getSubCategoryBulkUpdateProgress(group).completed }}/{{ getSubCategoryBulkUpdateProgress(group).total }}...
+                          } @else {
+                            <ng-container>
+                              <mat-icon>update</mat-icon>
+                              Set Table for {{ group }}
+                            </ng-container>
+                          }
+                        </button>
+                      </div>
+                    </form>
+                    @if (getSubCategoryBulkUpdating(group)) {
+                      <div class="bulk-update-progress">
+                        <mat-progress-bar
+                          mode="determinate"
+                          [value]="(getSubCategoryBulkUpdateProgress(group).completed / getSubCategoryBulkUpdateProgress(group).total) * 100">
+                        </mat-progress-bar>
+                        <p class="progress-text">
+                          Updated {{ getSubCategoryBulkUpdateProgress(group).completed }} of {{ getSubCategoryBulkUpdateProgress(group).total }} lines
+                          @if (getSubCategoryBulkUpdateProgress(group).failed > 0) {
+                            ({{ getSubCategoryBulkUpdateProgress(group).failed }} failed)
+                          }
+                        </p>
+                      </div>
+                    } @else {
+                      <p class="bulk-update-description">
+                        This will set the selected table for all {{ getSubCategoryLinesWithoutTable(group).length }} line(s) in {{ group }} that currently don't have a table assigned. Column names will remain unchanged.
+                      </p>
+                    }
+
+                    <!-- Column Update Command for Sub-category -->
+                    @if (getSubCategoryLinesWithoutColumn(group).length > 0) {
+                      <mat-divider class="command-divider"></mat-divider>
+                      <div class="bulk-update-controls">
+                        <div class="command-info">
+                          <mat-icon>view_column</mat-icon>
+                          <span class="command-title">Update Columns by Field Name for {{ group }}</span>
+                        </div>
+
+                        <button
+                          mat-raised-button
+                          color="accent"
+                          [disabled]="getSubCategoryBulkUpdatingColumns(group)"
+                          (click)="bulkUpdateColumnsForSubCategory(group)"
+                          class="bulk-update-button">
+                          @if (getSubCategoryBulkUpdatingColumns(group)) {
+                            <mat-spinner diameter="20"></mat-spinner>
+                            Updating {{ getSubCategoryColumnBulkUpdateProgress(group).completed }}/{{ getSubCategoryColumnBulkUpdateProgress(group).total }}...
+                          } @else {
+                            <ng-container>
+                              <mat-icon>auto_fix_high</mat-icon>
+                              Match Columns for {{ group }}
+                            </ng-container>
+                          }
+                        </button>
+                      </div>
+
+                      @if (getSubCategoryBulkUpdatingColumns(group)) {
+                        <div class="bulk-update-progress">
+                          <mat-progress-bar
+                            mode="determinate"
+                            [value]="(getSubCategoryColumnBulkUpdateProgress(group).completed / getSubCategoryColumnBulkUpdateProgress(group).total) * 100">
+                          </mat-progress-bar>
+                          <p class="progress-text">
+                            Updated {{ getSubCategoryColumnBulkUpdateProgress(group).completed }} of {{ getSubCategoryColumnBulkUpdateProgress(group).total }} columns
+                            @if (getSubCategoryColumnBulkUpdateProgress(group).failed > 0) {
+                              ({{ getSubCategoryColumnBulkUpdateProgress(group).failed }} failed)
+                            }
+                          </p>
+                        </div>
+                      } @else {
+                        <p class="bulk-update-description">
+                          This will match field names to column names for all {{ getSubCategoryLinesWithoutColumn(group).length }} line(s) in {{ group }} that have a table but no column assigned.
+                        </p>
+                      }
+                    }
+
+                    <!-- Clear Table Names Command for Sub-category -->
+                    @if (getSubCategoryLinesWithTable(group).length > 0) {
+                      <mat-divider class="command-divider"></mat-divider>
+                      <div class="bulk-update-controls">
+                        <div class="command-info">
+                          <mat-icon>clear_all</mat-icon>
+                          <span class="command-title">Clear All Table Names for {{ group }}</span>
+                        </div>
+
+                        <button
+                          mat-raised-button
+                          color="warn"
+                          [disabled]="getSubCategoryBulkClearingTables(group)"
+                          (click)="bulkClearTableNamesForSubCategory(group)"
+                          class="bulk-update-button">
+                          @if (getSubCategoryBulkClearingTables(group)) {
+                            <mat-spinner diameter="20"></mat-spinner>
+                            Clearing {{ getSubCategoryTableClearProgress(group).completed }}/{{ getSubCategoryTableClearProgress(group).total }}...
+                          } @else {
+                            <ng-container>
+                              <mat-icon>delete_sweep</mat-icon>
+                              Clear Table Names for {{ group }}
+                            </ng-container>
+                          }
+                        </button>
+                      </div>
+
+                      @if (getSubCategoryBulkClearingTables(group)) {
+                        <div class="bulk-update-progress">
+                          <mat-progress-bar
+                            mode="determinate"
+                            [value]="(getSubCategoryTableClearProgress(group).completed / getSubCategoryTableClearProgress(group).total) * 100">
+                          </mat-progress-bar>
+                          <p class="progress-text">
+                            Cleared {{ getSubCategoryTableClearProgress(group).completed }} of {{ getSubCategoryTableClearProgress(group).total }} table names
+                            @if (getSubCategoryTableClearProgress(group).failed > 0) {
+                              ({{ getSubCategoryTableClearProgress(group).failed }} failed)
+                            }
+                          </p>
+                        </div>
+                      } @else {
+                        <p class="bulk-update-description">
+                          This will clear table assignments for all {{ getSubCategoryLinesWithTable(group).length }} line(s) in {{ group }} that currently have a table assigned.
+                        </p>
+                      }
+                    }
+
+                    <!-- Clear Column Names Command for Sub-category -->
+                    @if (getSubCategoryLinesWithColumn(group).length > 0) {
+                      <mat-divider class="command-divider"></mat-divider>
+                      <div class="bulk-update-controls">
+                        <div class="command-info">
+                          <mat-icon>clear_all</mat-icon>
+                          <span class="command-title">Clear All Column Names for {{ group }}</span>
+                        </div>
+
+                        <button
+                          mat-raised-button
+                          color="warn"
+                          [disabled]="getSubCategoryBulkClearingColumns(group)"
+                          (click)="bulkClearColumnNamesForSubCategory(group)"
+                          class="bulk-update-button">
+                          @if (getSubCategoryBulkClearingColumns(group)) {
+                            <mat-spinner diameter="20"></mat-spinner>
+                            Clearing {{ getSubCategoryColumnClearProgress(group).completed }}/{{ getSubCategoryColumnClearProgress(group).total }}...
+                          } @else {
+                            <ng-container>
+                              <mat-icon>delete_sweep</mat-icon>
+                              Clear Column Names for {{ group }}
+                            </ng-container>
+                          }
+                        </button>
+                      </div>
+
+                      @if (getSubCategoryBulkClearingColumns(group)) {
+                        <div class="bulk-update-progress">
+                          <mat-progress-bar
+                            mode="determinate"
+                            [value]="(getSubCategoryColumnClearProgress(group).completed / getSubCategoryColumnClearProgress(group).total) * 100">
+                          </mat-progress-bar>
+                          <p class="progress-text">
+                            Cleared {{ getSubCategoryColumnClearProgress(group).completed }} of {{ getSubCategoryColumnClearProgress(group).total }} column names
+                            @if (getSubCategoryColumnClearProgress(group).failed > 0) {
+                              ({{ getSubCategoryColumnClearProgress(group).failed }} failed)
+                            }
+                          </p>
+                        </div>
+                      } @else {
+                        <p class="bulk-update-description">
+                          This will clear column assignments for all {{ getSubCategoryLinesWithColumn(group).length }} line(s) in {{ group }} that currently have a column assigned.
+                        </p>
+                      }
+                    }
+                  </mat-card-content>
+                </mat-card>
+
+                <mat-divider class="section-divider"></mat-divider>
+              }
+
               <table mat-table [dataSource]="groupedLines()[group]" class="lines-table">
                 <!-- ID Column -->
                 <ng-container matColumnDef="id">
@@ -237,7 +592,7 @@
                 </ng-container>
 
                 <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-                <tr mat-row *matRowDef="let row; columns: displayedColumns;" (click)="openEditDialog(row)" class="clickable-row"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns;" (click)="openEditDialog(row)" [class]="getRowClasses(row)" [attr.data-line-id]="row.id"></tr>
               </table>
             </div>
           }
@@ -287,7 +642,7 @@
             </ng-container>
 
             <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;" (click)="openEditDialog(row)" class="clickable-row"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;" (click)="openEditDialog(row)" [class]="getRowClasses(row)" [attr.data-line-id]="row.id"></tr>
           </table>
         }
       </div>

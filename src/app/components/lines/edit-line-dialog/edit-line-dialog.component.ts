@@ -8,6 +8,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
+import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Observable, map, startWith } from 'rxjs';
 import { ApiService } from '../../../services/api.service';
@@ -32,6 +34,8 @@ export interface EditLineDialogData {
     MatAutocompleteModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
+    MatIconModule,
+    MatTooltipModule,
     ReactiveFormsModule
   ],
   templateUrl: './edit-line-dialog.component.html',
@@ -69,8 +73,8 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
     private snackBar: MatSnackBar
   ) {
     this.editForm = this.fb.group({
-      table_name: ['', Validators.required],
-      column_name: [{value: '', disabled: true}, Validators.required]
+      table_name: [''],
+      column_name: [{value: '', disabled: true}]
     });
   }
 
@@ -338,7 +342,7 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
     if (typeof table === 'string') {
       return table;
     }
-    return table ? `${table.name} - ${table.description}` : '';
+    return table ? table.name : '';
   }
 
   displayColumnName(column: Column | string): string {
@@ -348,52 +352,167 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
     return column ? column.name : '';
   }
 
-  onSave(): void {
-    if (this.editForm.valid) {
-      const formValue = this.editForm.value;
-      
-      // Get table_id and column_id from the selected objects
-      const tableId = typeof formValue.table_name === 'object' 
-        ? formValue.table_name?.id 
-        : this.tables().find(t => t.name === formValue.table_name)?.id;
-      
-      const columnId = typeof formValue.column_name === 'object' 
-        ? formValue.column_name?.id 
-        : this.columns().find(c => c.name === formValue.column_name)?.id;
-
-      // Send PATCH request to /api/lines/{line_id}
-      this.apiService.updateLine(this.data.line.id, tableId!, columnId!).subscribe({
-        next: (savedLine) => {
-          // Create updated line object with the new table and column names
-          const updatedLine: Line = {
-            ...this.data.line,
-            table_name: typeof formValue.table_name === 'string'
-              ? formValue.table_name
-              : formValue.table_name?.name || '',
-            column_name: typeof formValue.column_name === 'string'
-              ? formValue.column_name
-              : formValue.column_name?.name || '',
-            table_id: tableId,
-            column_id: columnId
-          };
-          
-          this.snackBar.open('Line saved successfully', 'Close', {
-            duration: 2000
-          });
-          this.dialogRef.close(updatedLine);
-        },
-        error: (error) => {
-          console.error('Error saving line:', error);
-          this.snackBar.open('Error saving line', 'Close', {
-            duration: 3000
-          });
-        }
-      });
-    } else {
-      this.snackBar.open('Please fill in all required fields', 'Close', {
+  onAutoMatchColumn(): void {
+    const fieldName = this.data.line.field_name;
+    if (!fieldName || !fieldName.trim()) {
+      this.snackBar.open('No field name available to match', 'Close', {
         duration: 3000
       });
+      return;
     }
+
+    const availableColumns = this.columns();
+    if (availableColumns.length === 0) {
+      this.snackBar.open('No columns available to match', 'Close', {
+        duration: 3000
+      });
+      return;
+    }
+
+    // Try to find an exact match (case insensitive)
+    const fieldNameLower = fieldName.toLowerCase().trim();
+    const exactMatch = availableColumns.find(column => 
+      column.name.toLowerCase().trim() === fieldNameLower
+    );
+
+    if (exactMatch) {
+      // Set the column form control to the matched column
+      this.editForm.patchValue({ column_name: exactMatch });
+      this.onColumnSelected(exactMatch);
+      this.snackBar.open(`Matched column: ${exactMatch.name}`, 'Close', {
+        duration: 2000
+      });
+    } else {
+      // Try partial match if no exact match found
+      const partialMatch = availableColumns.find(column => 
+        column.name.toLowerCase().includes(fieldNameLower) || 
+        fieldNameLower.includes(column.name.toLowerCase())
+      );
+
+      if (partialMatch) {
+        this.editForm.patchValue({ column_name: partialMatch });
+        this.onColumnSelected(partialMatch);
+        this.snackBar.open(`Partial match found: ${partialMatch.name}`, 'Close', {
+          duration: 2000
+        });
+      } else {
+        this.snackBar.open('No matching column found', 'Close', {
+          duration: 3000
+        });
+      }
+    }
+  }
+
+  isAutoMatchEnabled(): boolean {
+    // Enable auto-match when:
+    // 1. Table is selected (has value)
+    // 2. Field name exists
+    // 3. Columns are loaded and available
+    const tableValue = this.editForm.get('table_name')?.value;
+    const hasTable = tableValue && (typeof tableValue === 'object' ? tableValue.id : tableValue);
+    const hasFieldName = this.data.line.field_name && this.data.line.field_name.trim();
+    const hasColumns = this.columns().length > 0 && !this.loadingColumns();
+    
+    return !!(hasTable && hasFieldName && hasColumns);
+  }
+
+  onClearColumn(): void {
+    this.editForm.patchValue({ column_name: '' });
+    // Reset the typing flag
+    this.userTypingColumn = false;
+    this.columnDropdownOpen = false;
+    
+    this.snackBar.open('Column cleared', 'Close', {
+      duration: 2000
+    });
+  }
+
+  onClearTable(): void {
+    // Clear both table and column since column depends on table
+    this.editForm.patchValue({ 
+      table_name: '',
+      column_name: '' 
+    });
+    
+    // Reset columns array
+    this.columns.set([]);
+    
+    // Disable column field
+    this.editForm.get('column_name')?.disable();
+    
+    // Reset typing flags
+    this.userTypingTable = false;
+    this.userTypingColumn = false;
+    this.tableDropdownOpen = false;
+    this.columnDropdownOpen = false;
+    
+    this.snackBar.open('Table and column cleared', 'Close', {
+      duration: 2000
+    });
+  }
+
+  isClearColumnEnabled(): boolean {
+    const columnValue = this.editForm.get('column_name')?.value;
+    return !!(columnValue && (typeof columnValue === 'object' ? columnValue.id : columnValue));
+  }
+
+  isClearTableEnabled(): boolean {
+    const tableValue = this.editForm.get('table_name')?.value;
+    return !!(tableValue && (typeof tableValue === 'object' ? tableValue.id : tableValue));
+  }
+
+  onSave(): void {
+    const formValue = this.editForm.value;
+    
+    // Get table_id and column_id from the selected objects
+    // If no value is selected, send 0 to clear the field on the server
+    let tableId: number | undefined;
+    let columnId: number | undefined;
+    
+    if (formValue.table_name) {
+      tableId = typeof formValue.table_name === 'object' 
+        ? formValue.table_name?.id 
+        : this.tables().find(t => t.name === formValue.table_name)?.id;
+    }
+    
+    if (formValue.column_name) {
+      columnId = typeof formValue.column_name === 'object' 
+        ? formValue.column_name?.id 
+        : this.columns().find(c => c.name === formValue.column_name)?.id;
+    }
+    
+    // Use 0 to clear the value on the server if nothing is selected
+    const tableIdToSend = tableId || 0;
+    const columnIdToSend = columnId || 0;
+
+    // Send PATCH request to /api/lines/{line_id}
+    this.apiService.updateLine(this.data.line.id, tableIdToSend, columnIdToSend).subscribe({
+      next: (savedLine) => {
+        // Create updated line object with the new table and column names
+        const updatedLine: Line = {
+          ...this.data.line,
+          table_name: typeof formValue.table_name === 'string'
+            ? formValue.table_name
+            : formValue.table_name?.name || '',
+          column_name: typeof formValue.column_name === 'string'
+            ? formValue.column_name
+            : formValue.column_name?.name || '',
+          table_id: tableId,
+          column_id: columnId
+        };
+        
+        this.snackBar.open('Line saved successfully', 'Close', {
+          duration: 2000
+        });
+        this.dialogRef.close(updatedLine);
+      },
+      error: (error) => {
+        console.error('Error saving line:', error);
+        this.snackBar.open('Error saving line', 'Close', {
+          duration: 3000
+        });
+      }
+    });
   }
 
 }
