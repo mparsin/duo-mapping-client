@@ -1,0 +1,377 @@
+warning: in the working copy of 'src/app/components/lines/edit-line-dialog/edit-line-dialog.component.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/components/lines/edit-line-dialog/edit-line-dialog.component.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/components/lines/edit-line-dialog/edit-line-dialog.component.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/components/lines/lines.component.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/services/api.service.ts', LF will be replaced by CRLF the next time Git touches it
+diff --git a/src/app/components/lines/edit-line-dialog/edit-line-dialog.component.css b/src/app/components/lines/edit-line-dialog/edit-line-dialog.component.css
+index a39512c..234c7d9 100644
+--- a/src/app/components/lines/edit-line-dialog/edit-line-dialog.component.css
++++ b/src/app/components/lines/edit-line-dialog/edit-line-dialog.component.css
+@@ -128,3 +128,106 @@ mat-spinner {
+ .clear-button[disabled] {
+   opacity: 0.3;
+ }
++
++/* Search section styling */
++.search-section {
++  display: flex;
++  flex-direction: column;
++  gap: 8px;
++  margin-top: 8px;
++}
++
++.search-button {
++  align-self: flex-start;
++}
++
++.search-button mat-icon {
++  margin-right: 4px;
++  font-size: 20px;
++  height: 20px;
++  width: 20px;
++  vertical-align: middle;
++}
++
++.search-hint {
++  font-size: 12px;
++  color: rgba(0, 0, 0, 0.6);
++  margin-left: 4px;
++}
++
++/* Search results styling */
++.search-results-section {
++  margin-top: 16px;
++  padding: 16px;
++  border: 1px solid #e0e0e0;
++  border-radius: 4px;
++  background-color: #fafafa;
++}
++
++.search-results-section h4 {
++  margin: 0 0 12px 0;
++  font-size: 16px;
++  font-weight: 500;
++  color: #333;
++}
++
++.search-results-list {
++  display: flex;
++  flex-direction: column;
++  gap: 8px;
++  max-height: 200px;
++  overflow-y: auto;
++}
++
++.search-result-item {
++  padding: 12px;
++  border: 1px solid #ddd;
++  border-radius: 4px;
++  background-color: white;
++  cursor: pointer;
++  transition: all 0.2s ease;
++}
++
++.search-result-item:hover {
++  background-color: #f5f5f5;
++  border-color: #2196f3;
++}
++
++.search-result-item.selected {
++  background-color: #e3f2fd;
++  border-color: #2196f3;
++  box-shadow: 0 2px 4px rgba(33, 150, 243, 0.2);
++}
++
++.result-header {
++  display: flex;
++  justify-content: space-between;
++  align-items: center;
++  margin-bottom: 4px;
++}
++
++.column-name {
++  font-weight: 500;
++  font-size: 14px;
++  color: #333;
++}
++
++.match-type {
++  font-size: 11px;
++  padding: 2px 6px;
++  border-radius: 12px;
++  background-color: #ff9800;
++  color: white;
++  font-weight: 500;
++  text-transform: uppercase;
++}
++
++.match-type.exact {
++  background-color: #4caf50;
++}
++
++.table-name {
++  font-size: 12px;
++  color: #666;
++  font-style: italic;
++}
+diff --git a/src/app/components/lines/edit-line-dialog/edit-line-dialog.component.html b/src/app/components/lines/edit-line-dialog/edit-line-dialog.component.html
+index 0373b2d..6b92967 100644
+--- a/src/app/components/lines/edit-line-dialog/edit-line-dialog.component.html
++++ b/src/app/components/lines/edit-line-dialog/edit-line-dialog.component.html
+@@ -37,7 +37,7 @@
+             }
+           </mat-autocomplete>
+         </mat-form-field>
+-        <button
++        <button
+           mat-icon-button
+           type="button"
+           (click)="onClearTable()"
+@@ -92,7 +92,7 @@
+             }
+           </mat-autocomplete>
+         </mat-form-field>
+-        <button
++        <button
+           mat-icon-button
+           type="button"
+           (click)="onClearColumn()"
+@@ -105,7 +105,7 @@
+
+       <!-- Auto-match button -->
+       <div class="auto-match-section">
+-        <button
++        <button
+           mat-stroked-button
+           type="button"
+           (click)="onAutoMatchColumn()"
+@@ -130,6 +130,49 @@
+           }
+         </mat-hint>
+       </div>
++
++      <!-- Search button -->
++      <div class="search-section">
++        <button
++          mat-stroked-button
++          type="button"
++          (click)="onSearchColumns()"
++          [disabled]="!isSearchEnabled()"
++          class="search-button">
++          <mat-icon>search</mat-icon>
++          Search
++        </button>
++        <mat-hint class="search-hint">
++          @if (!isSearchEnabled()) {
++            No field name available to search
++          } @else {
++            Search for columns matching field name across all tables: {{ data.line.field_name }}
++          }
++        </mat-hint>
++      </div>
++
++      <!-- Search Results -->
++      @if (searchResults().length > 0) {
++        <div class="search-results-section">
++          <h4>Search Results</h4>
++          <div class="search-results-list">
++            @for (result of searchResults(); track result.column_id) {
++              <div
++                class="search-result-item"
++                (click)="onSearchResultSelected(result)"
++                [class.selected]="selectedSearchResult()?.column_id === result.column_id">
++                <div class="result-header">
++                  <span class="column-name">{{ result.column_name }}</span>
++                  <span class="match-type" [class.exact]="result.match_type === 'exact'">
++                    {{ result.match_type }}
++                  </span>
++                </div>
++                <div class="table-name">{{ result.table_name }}</div>
++              </div>
++            }
++          </div>
++        </div>
++      }
+     </form>
+   </mat-dialog-content>
+
+diff --git a/src/app/components/lines/edit-line-dialog/edit-line-dialog.component.ts b/src/app/components/lines/edit-line-dialog/edit-line-dialog.component.ts
+index 156305e..f9d09ad 100644
+--- a/src/app/components/lines/edit-line-dialog/edit-line-dialog.component.ts
++++ b/src/app/components/lines/edit-line-dialog/edit-line-dialog.component.ts
+@@ -16,6 +16,7 @@ import { ApiService } from '../../../services/api.service';
+ import { Line } from '../../../models/line.model';
+ import { Table } from '../../../models/table.model';
+ import { Column } from '../../../models/column.model';
++import { SearchResult } from '../../../models/search-result.model';
+
+ export interface EditLineDialogData {
+   line: Line;
+@@ -47,6 +48,9 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
+   columns = signal<Column[]>([]);
+   loadingTables = signal<boolean>(false);
+   loadingColumns = signal<boolean>(false);
++  searchResults = signal<SearchResult[]>([]);
++  selectedSearchResult = signal<SearchResult | null>(null);
++  loadingSearch = signal<boolean>(false);
+
+   // Filtered observables for typeahead
+   filteredTables$!: Observable<Table[]>;
+@@ -515,4 +519,82 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
+     });
+   }
+
++  onSearchColumns(): void {
++    const fieldName = this.data.line.field_name;
++    if (!fieldName || !fieldName.trim()) {
++      this.snackBar.open('No field name available to search', 'Close', {
++        duration: 3000
++      });
++      return;
++    }
++
++    this.loadingSearch.set(true);
++    this.searchResults.set([]);
++    this.selectedSearchResult.set(null);
++
++    this.apiService.searchColumns(fieldName).subscribe({
++      next: (results) => {
++        this.searchResults.set(results);
++        this.loadingSearch.set(false);
++
++        if (results.length === 0) {
++          this.snackBar.open('No matching columns found', 'Close', {
++            duration: 3000
++          });
++        } else {
++          this.snackBar.open(`Found ${results.length} matching columns`, 'Close', {
++            duration: 2000
++          });
++        }
++      },
++      error: (error) => {
++        console.error('Error searching columns:', error);
++        this.snackBar.open('Error searching columns', 'Close', {
++          duration: 3000
++        });
++        this.loadingSearch.set(false);
++      }
++    });
++  }
++
++  onSearchResultSelected(result: SearchResult): void {
++    this.selectedSearchResult.set(result);
++
++    // Find the table in the loaded tables
++    const table = this.tables().find(t => t.name === result.table_name);
++    if (table) {
++      // Set the table in the form
++      this.editForm.patchValue({ table_name: table });
++
++      // Load columns for this table
++      this.loadColumns(table.id);
++
++      // After columns are loaded, find and set the column
++      setTimeout(() => {
++        const column = this.columns().find(c => c.name === result.column_name);
++        if (column) {
++          this.editForm.patchValue({ column_name: column });
++        } else {
++          // If column not found in loaded columns, set as string value
++          this.editForm.patchValue({ column_name: result.column_name });
++        }
++      }, 500); // Give time for columns to load
++    } else {
++      // If table not found, set as string values
++      this.editForm.patchValue({
++        table_name: result.table_name,
++        column_name: result.column_name
++      });
++    }
++
++    this.snackBar.open(`Selected: ${result.column_name} from ${result.table_name}`, 'Close', {
++      duration: 2000
++    });
++  }
++
++  isSearchEnabled(): boolean {
++    const fieldName = this.data.line.field_name;
++    return !!(fieldName && fieldName.trim());
++  }
++
+ }
+diff --git a/src/app/components/lines/lines.component.css b/src/app/components/lines/lines.component.css
+index b9d7e49..b925f96 100644
+--- a/src/app/components/lines/lines.component.css
++++ b/src/app/components/lines/lines.component.css
+@@ -273,8 +273,24 @@ tr[data-line-id].highlight-missing-column {
+   height: 48px;
+   display: flex;
+   align-items: center;
++  justify-content: center;
+   gap: 8px;
+   font-weight: 500;
++  padding: 12px;
++}
++
++.bulk-update-button ::ng-deep .mdc-button__label {
++  display: flex;
++  flex-direction: row;
++  align-items: center;
++  justify-content: center;
++  line-height: 1;
++  gap: 8px;
++}
++
++.bulk-update-button mat-spinner {
++  display: inline-flex !important;
++  margin-right: 8px;
+ }
+
+ .bulk-update-button:disabled {
+@@ -582,10 +598,23 @@ tr[data-line-id].highlight-missing-column {
+   font-size: 0.9rem;
+   display: flex;
+   align-items: center;
++  justify-content: center;
+   gap: 6px;
+   font-weight: 500;
+ }
+
++.sub-category-bulk-update-card .bulk-update-button mat-icon {
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  line-height: 1;
++}
++
++.sub-category-bulk-update-card .bulk-update-button mat-spinner {
++  display: inline-flex !important;
++  margin-right: 6px;
++}
++
+ .sub-category-bulk-update-card .bulk-update-description {
+   color: #6c757d;
+   font-size: 0.85rem;
+diff --git a/src/app/services/api.service.ts b/src/app/services/api.service.ts
+index c9e79a8..4f3e729 100644
+--- a/src/app/services/api.service.ts
++++ b/src/app/services/api.service.ts
+@@ -6,6 +6,7 @@ import { Line } from '../models/line.model';
+ import { Table } from '../models/table.model';
+ import { Column } from '../models/column.model';
+ import { SubCategory } from '../models/sub-category.model';
++import { SearchResult } from '../models/search-result.model';
+
+ @Injectable({
+   providedIn: 'root'
+@@ -91,4 +92,9 @@ export class ApiService {
+     };
+     return this.http.patch<Line>(`${this.baseUrl}/lines/${lineId}`, body);
+   }
++
++  // Search columns by column name
++  searchColumns(columnName: string): Observable<SearchResult[]> {
++    return this.http.get<SearchResult[]>(`${this.baseUrl}/search-columns?columnName=${encodeURIComponent(columnName)}`);
++  }
+ }
