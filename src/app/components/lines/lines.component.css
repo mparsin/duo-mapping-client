@@ -273,8 +273,24 @@ tr[data-line-id].highlight-missing-column {
   height: 48px;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   font-weight: 500;
+  padding: 12px;
+}
+
+.bulk-update-button ::ng-deep .mdc-button__label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  gap: 8px;
+}
+
+.bulk-update-button mat-spinner {
+  display: inline-flex !important;
+  margin-right: 8px;
 }
 
 .bulk-update-button:disabled {
@@ -582,8 +598,21 @@ tr[data-line-id].highlight-missing-column {
   font-size: 0.9rem;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   font-weight: 500;
+}
+
+.sub-category-bulk-update-card .bulk-update-button mat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.sub-category-bulk-update-card .bulk-update-button mat-spinner {
+  display: inline-flex !important;
+  margin-right: 6px;
 }
 
 .sub-category-bulk-update-card .bulk-update-description {

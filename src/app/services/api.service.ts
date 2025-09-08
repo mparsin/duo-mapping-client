@@ -6,6 +6,7 @@ import { Line } from '../models/line.model';
 import { Table } from '../models/table.model';
 import { Column } from '../models/column.model';
 import { SubCategory } from '../models/sub-category.model';
+import { SearchResult } from '../models/search-result.model';
 
 @Injectable({
   providedIn: 'root'
@@ -90,5 +91,10 @@ export class ApiService {
       column_id: 0
     };
     return this.http.patch<Line>(`${this.baseUrl}/lines/${lineId}`, body);
+  }
+
+  // Search columns by column name
+  searchColumns(columnName: string): Observable<SearchResult[]> {
+    return this.http.get<SearchResult[]>(`${this.baseUrl}/search-columns?columnName=${encodeURIComponent(columnName)}`);
   }
 }

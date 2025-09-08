@@ -16,6 +16,7 @@ import { ApiService } from '../../../services/api.service';
 import { Line } from '../../../models/line.model';
 import { Table } from '../../../models/table.model';
 import { Column } from '../../../models/column.model';
+import { SearchResult } from '../../../models/search-result.model';
 
 export interface EditLineDialogData {
   line: Line;
@@ -47,6 +48,9 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
   columns = signal<Column[]>([]);
   loadingTables = signal<boolean>(false);
   loadingColumns = signal<boolean>(false);
+  searchResults = signal<SearchResult[]>([]);
+  selectedSearchResult = signal<SearchResult | null>(null);
+  loadingSearch = signal<boolean>(false);
 
   // Filtered observables for typeahead
   filteredTables$!: Observable<Table[]>;
@@ -513,6 +517,84 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
         });
       }
     });
+  }
+
+  onSearchColumns(): void {
+    const fieldName = this.data.line.field_name;
+    if (!fieldName || !fieldName.trim()) {
+      this.snackBar.open('No field name available to search', 'Close', {
+        duration: 3000
+      });
+      return;
+    }
+
+    this.loadingSearch.set(true);
+    this.searchResults.set([]);
+    this.selectedSearchResult.set(null);
+
+    this.apiService.searchColumns(fieldName).subscribe({
+      next: (results) => {
+        this.searchResults.set(results);
+        this.loadingSearch.set(false);
+        
+        if (results.length === 0) {
+          this.snackBar.open('No matching columns found', 'Close', {
+            duration: 3000
+          });
+        } else {
+          this.snackBar.open(`Found ${results.length} matching columns`, 'Close', {
+            duration: 2000
+          });
+        }
+      },
+      error: (error) => {
+        console.error('Error searching columns:', error);
+        this.snackBar.open('Error searching columns', 'Close', {
+          duration: 3000
+        });
+        this.loadingSearch.set(false);
+      }
+    });
+  }
+
+  onSearchResultSelected(result: SearchResult): void {
+    this.selectedSearchResult.set(result);
+    
+    // Find the table in the loaded tables
+    const table = this.tables().find(t => t.name === result.table_name);
+    if (table) {
+      // Set the table in the form
+      this.editForm.patchValue({ table_name: table });
+      
+      // Load columns for this table
+      this.loadColumns(table.id);
+      
+      // After columns are loaded, find and set the column
+      setTimeout(() => {
+        const column = this.columns().find(c => c.name === result.column_name);
+        if (column) {
+          this.editForm.patchValue({ column_name: column });
+        } else {
+          // If column not found in loaded columns, set as string value
+          this.editForm.patchValue({ column_name: result.column_name });
+        }
+      }, 500); // Give time for columns to load
+    } else {
+      // If table not found, set as string values
+      this.editForm.patchValue({
+        table_name: result.table_name,
+        column_name: result.column_name
+      });
+    }
+
+    this.snackBar.open(`Selected: ${result.column_name} from ${result.table_name}`, 'Close', {
+      duration: 2000
+    });
+  }
+
+  isSearchEnabled(): boolean {
+    const fieldName = this.data.line.field_name;
+    return !!(fieldName && fieldName.trim());
   }
 
 }

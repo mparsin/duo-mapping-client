@@ -37,7 +37,7 @@
             }
           </mat-autocomplete>
         </mat-form-field>
-        <button 
+        <button
           mat-icon-button
           type="button"
           (click)="onClearTable()"
@@ -92,7 +92,7 @@
             }
           </mat-autocomplete>
         </mat-form-field>
-        <button 
+        <button
           mat-icon-button
           type="button"
           (click)="onClearColumn()"
@@ -105,7 +105,7 @@
 
       <!-- Auto-match button -->
       <div class="auto-match-section">
-        <button 
+        <button
           mat-stroked-button
           type="button"
           (click)="onAutoMatchColumn()"
@@ -130,6 +130,49 @@
           }
         </mat-hint>
       </div>
+
+      <!-- Search button -->
+      <div class="search-section">
+        <button
+          mat-stroked-button
+          type="button"
+          (click)="onSearchColumns()"
+          [disabled]="!isSearchEnabled()"
+          class="search-button">
+          <mat-icon>search</mat-icon>
+          Search
+        </button>
+        <mat-hint class="search-hint">
+          @if (!isSearchEnabled()) {
+            No field name available to search
+          } @else {
+            Search for columns matching field name across all tables: {{ data.line.field_name }}
+          }
+        </mat-hint>
+      </div>
+
+      <!-- Search Results -->
+      @if (searchResults().length > 0) {
+        <div class="search-results-section">
+          <h4>Search Results</h4>
+          <div class="search-results-list">
+            @for (result of searchResults(); track result.column_id) {
+              <div
+                class="search-result-item"
+                (click)="onSearchResultSelected(result)"
+                [class.selected]="selectedSearchResult()?.column_id === result.column_id">
+                <div class="result-header">
+                  <span class="column-name">{{ result.column_name }}</span>
+                  <span class="match-type" [class.exact]="result.match_type === 'exact'">
+                    {{ result.match_type }}
+                  </span>
+                </div>
+                <div class="table-name">{{ result.table_name }}</div>
+              </div>
+            }
+          </div>
+        </div>
+      }
     </form>
   </mat-dialog-content>
 
