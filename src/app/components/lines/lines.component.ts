@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, Signal, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatTableModule } from '@angular/material/table';
@@ -23,6 +23,8 @@ import { Line } from '../../models/line.model';
 import { Table } from '../../models/table.model';
 import { Column } from '../../models/column.model';
 import { SubCategory } from '../../models/sub-category.model';
+import { TableMatch } from '../../models/table-match.model';
+import { TableSuggestionService } from '../../services/table-suggestion.service';
 import { EditLineDialogComponent } from './edit-line-dialog/edit-line-dialog.component';
 
 @Component({
@@ -50,7 +52,7 @@ import { EditLineDialogComponent } from './edit-line-dialog/edit-line-dialog.com
   templateUrl: './lines.component.html',
   styleUrl: './lines.component.css'
 })
-export class LinesComponent implements OnInit, OnChanges {
+export class LinesComponent implements OnInit, OnDestroy, OnChanges {
   @Input() categoryId: number | null = null;
   @Input() categoryName: string = '';
   @Input() showToolbar: boolean = true;
@@ -68,6 +70,11 @@ export class LinesComponent implements OnInit, OnChanges {
   bulkClearingColumns = signal<boolean>(false);
   selectedTableId = signal<number | null>(null);
   categoryBulkCommandsVisible = signal<boolean>(false);
+  
+  // Main category table suggestion getters (initialized in constructor)
+  loadingSuggestedTables!: Signal<boolean>;
+  suggestedTables!: Signal<TableMatch[]>;
+  showSuggestedTables!: Signal<boolean>;
   bulkUpdateProgress = signal<{ completed: number, total: number, failed: number }>({ completed: 0, total: 0, failed: 0 });
   columnBulkUpdateProgress = signal<{ completed: number, total: number, failed: number }>({ completed: 0, total: 0, failed: 0 });
   tableClearProgress = signal<{ completed: number, total: number, failed: number }>({ completed: 0, total: 0, failed: 0 });
@@ -91,6 +98,7 @@ export class LinesComponent implements OnInit, OnChanges {
   subCategoryTableDropdownOpen = new Map<string, boolean>();
   subCategoryBulkCommandsVisible = new Map<string, boolean>();
   private subCategoryUserTypingTable = new Map<string, boolean>();
+
 
   // Typeahead functionality
   filteredTables$!: Observable<Table[]>;
@@ -206,11 +214,17 @@ export class LinesComponent implements OnInit, OnChanges {
     private apiService: ApiService,
     private snackBar: MatSnackBar,
     private dialog: MatDialog,
+    private tableSuggestionService: TableSuggestionService,
     private fb: FormBuilder
   ) {
     this.bulkUpdateForm = this.fb.group({
       table_name: ['']
     });
+
+    // Initialize table suggestion signals
+    this.loadingSuggestedTables = this.tableSuggestionService.getLoadingSignal('main-category');
+    this.suggestedTables = this.tableSuggestionService.getSuggestionsSignal('main-category');
+    this.showSuggestedTables = this.tableSuggestionService.getVisibleSignal('main-category');
   }
 
   ngOnInit(): void {
@@ -242,13 +256,23 @@ export class LinesComponent implements OnInit, OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['categoryId'] && this.categoryId) {
+      // Clear suggestions when category changes
+      this.clearAllTableSuggestions();
       this.loadLines(this.categoryId);
     }
+  }
+
+  ngOnDestroy(): void {
+    // Clear all suggestions when component is destroyed
+    this.clearAllTableSuggestions();
   }
 
   loadLines(categoryId: number): void {
     this.loading.set(true);
     this.error.set(null);
+
+    // Clear all table suggestions when switching categories
+    this.clearAllTableSuggestions();
 
     // Load both lines and sub-categories in parallel
     forkJoin({
@@ -346,6 +370,22 @@ export class LinesComponent implements OnInit, OnChanges {
     }
   }
 
+  // Update lines data without triggering loading state or scroll position loss
+  private updateLinesData(): void {
+    if (this.categoryId) {
+      this.apiService.getLinesByCategory(this.categoryId).subscribe({
+        next: (lines) => {
+          this.lines.set(lines);
+        },
+        error: (error) => {
+          console.error('Error updating lines data:', error);
+          // Don't show error snackbar for background updates
+        }
+      });
+    }
+  }
+
+
   toggleGroupBySubCategory(): void {
     this.groupBySubCategory.set(!this.groupBySubCategory());
   }
@@ -413,6 +453,19 @@ export class LinesComponent implements OnInit, OnChanges {
     return this.subCategoryBulkCommandsVisible.get(groupName) || false;
   }
 
+  // Sub-category table suggestion getters
+  getSubCategoryLoadingSuggestedTables(groupName: string): boolean {
+    return this.tableSuggestionService.getLoadingSignal(`subcategory-${groupName}`)();
+  }
+
+  getSubCategorySuggestedTables(groupName: string): TableMatch[] {
+    return this.tableSuggestionService.getSuggestionsSignal(`subcategory-${groupName}`)();
+  }
+
+  getSubCategoryShowSuggestedTables(groupName: string): boolean {
+    return this.tableSuggestionService.getVisibleSignal(`subcategory-${groupName}`)();
+  }
+
   toggleSubCategoryBulkCommands(groupName: string): void {
     const currentVisibility = this.subCategoryBulkCommandsVisible.get(groupName) || false;
     this.subCategoryBulkCommandsVisible.set(groupName, !currentVisibility);
@@ -436,6 +489,28 @@ export class LinesComponent implements OnInit, OnChanges {
            this.linesWithTable().length > 0 || 
            this.linesWithColumn().length > 0;
   }
+
+  // Computed property to check if all lines have complete mappings
+  allLinesHaveCompleteMappings = computed(() => {
+    const lines = this.lines();
+    if (lines.length === 0) return true;
+    
+    return lines.every(line => 
+      (line.table_id || line.table_name) && 
+      (line.column_id || line.column_name)
+    );
+  });
+
+  // Computed property to check if all lines in a sub-category have complete mappings
+  getSubCategoryAllLinesHaveCompleteMappings = (groupName: string): boolean => {
+    const groupLines = this.groupedLines()[groupName] || [];
+    if (groupLines.length === 0) return true;
+    
+    return groupLines.every(line => 
+      (line.table_id || line.table_name) && 
+      (line.column_id || line.column_name)
+    );
+  };
 
 
   getStatusColor(status: string | undefined): string {
@@ -632,10 +707,10 @@ export class LinesComponent implements OnInit, OnChanges {
           });
         }
         
-        // Clear the form and refresh the lines
+        // Clear the form and update the lines data
         this.bulkUpdateForm.patchValue({ table_name: '' });
         this.selectedTableId.set(null);
-        this.refreshLines();
+        this.updateLinesData();
       },
       error: (error) => {
         console.error('Error in bulk update:', error);
@@ -728,8 +803,8 @@ export class LinesComponent implements OnInit, OnChanges {
               }
             );
 
-            // Refresh the lines to show updated data
-            this.refreshLines();
+            // Update the lines data to show updated columns
+            this.updateLinesData();
           },
           error: (error) => {
             console.error('Error in column updates:', error);
@@ -855,7 +930,7 @@ export class LinesComponent implements OnInit, OnChanges {
           });
         }
         
-        this.refreshLines();
+        this.updateLinesData();
       },
       error: (error) => {
         console.error('Error in bulk table clear:', error);
@@ -930,7 +1005,7 @@ export class LinesComponent implements OnInit, OnChanges {
           });
         }
         
-        this.refreshLines();
+        this.updateLinesData();
       },
       error: (error) => {
         console.error('Error in bulk column clear:', error);
@@ -1024,10 +1099,10 @@ export class LinesComponent implements OnInit, OnChanges {
           });
         }
         
-        // Clear the form and refresh the lines
+        // Clear the form and update the lines data
         this.getSubCategoryBulkUpdateForm(groupName).patchValue({ table_name: '' });
         this.subCategorySelectedTableIds.set(groupName, null);
-        this.refreshLines();
+        this.updateLinesData();
       },
       error: (error) => {
         console.error('Error in sub-category bulk update:', error);
@@ -1107,8 +1182,8 @@ export class LinesComponent implements OnInit, OnChanges {
               }
             );
 
-            // Refresh the lines to show updated data
-            this.refreshLines();
+            // Update the lines data to show updated columns
+            this.updateLinesData();
           },
           error: (error) => {
             console.error('Error in sub-category column updates:', error);
@@ -1194,7 +1269,7 @@ export class LinesComponent implements OnInit, OnChanges {
           });
         }
         
-        this.refreshLines();
+        this.updateLinesData();
       },
       error: (error) => {
         console.error('Error in sub-category bulk table clear:', error);
@@ -1269,7 +1344,7 @@ export class LinesComponent implements OnInit, OnChanges {
           });
         }
         
-        this.refreshLines();
+        this.updateLinesData();
       },
       error: (error) => {
         console.error('Error in sub-category bulk column clear:', error);
@@ -1281,5 +1356,145 @@ export class LinesComponent implements OnInit, OnChanges {
         });
       }
     });
+  }
+
+  onSuggestTables(): void {
+    const currentLines = this.lines();
+    
+    this.tableSuggestionService.suggestTables('main-category', currentLines).subscribe({
+      next: (matches) => {
+        console.log('Main category suggestions received:', matches);
+        console.log('showSuggestedTables signal value:', this.showSuggestedTables());
+        console.log('suggestedTables signal value:', this.suggestedTables());
+        
+        if (matches.length === 0) {
+          this.snackBar.open('No matching tables found', 'Close', {
+            duration: 3000,
+            horizontalPosition: 'right',
+            verticalPosition: 'top'
+          });
+        } else {
+          this.snackBar.open(`Found ${matches.length} matching tables`, 'Close', {
+            duration: 2000,
+            horizontalPosition: 'right',
+            verticalPosition: 'top'
+          });
+        }
+      },
+      error: (error) => {
+        console.error('Error finding table matches:', error);
+        this.snackBar.open('Error finding table matches', 'Close', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      }
+    });
+  }
+
+  onSelectSuggestedTable(tableMatch: TableMatch): void {
+    const table = this.tableSuggestionService.selectTable('main-category', tableMatch, this.tables());
+    if (table) {
+      // Set the table in the form
+      this.bulkUpdateForm.patchValue({ table_name: table });
+      this.selectedTableId.set(table.id);
+      
+      // Reset typing flag after selection
+      this.userTypingTable = false;
+      this.tableDropdownOpen = false;
+      
+      this.snackBar.open(`Selected table: ${tableMatch.table_name}`, 'Close', {
+        duration: 2000,
+        horizontalPosition: 'right',
+        verticalPosition: 'top'
+      });
+    } else {
+      this.snackBar.open(`Table ${tableMatch.table_name} not found in loaded tables`, 'Close', {
+        duration: 3000,
+        horizontalPosition: 'right',
+        verticalPosition: 'top'
+      });
+    }
+  }
+
+  closeSuggestedTables(): void {
+    this.tableSuggestionService.closeSuggestions('main-category');
+  }
+
+  clearAllTableSuggestions(): void {
+    // Clear main category suggestions
+    this.tableSuggestionService.closeSuggestions('main-category');
+    
+    // Clear all sub-category suggestions
+    const groupKeys = this.getGroupKeys();
+    groupKeys.forEach(groupName => {
+      this.tableSuggestionService.closeSuggestions(`subcategory-${groupName}`);
+    });
+  }
+
+  // Sub-category table suggestion methods
+  onSuggestTablesForSubCategory(groupName: string): void {
+    const groupLines = this.getSubCategoryLines(groupName);
+    
+    this.tableSuggestionService.suggestTables(`subcategory-${groupName}`, groupLines).subscribe({
+      next: (matches) => {
+        if (matches.length === 0) {
+          this.snackBar.open('No matching tables found', 'Close', {
+            duration: 3000,
+            horizontalPosition: 'right',
+            verticalPosition: 'top'
+          });
+        } else {
+          this.snackBar.open(`Found ${matches.length} matching tables for ${groupName}`, 'Close', {
+            duration: 2000,
+            horizontalPosition: 'right',
+            verticalPosition: 'top'
+          });
+        }
+      },
+      error: (error) => {
+        console.error('Error finding table matches for sub-category:', error);
+        this.snackBar.open('Error finding table matches', 'Close', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      }
+    });
+  }
+
+  onSelectSuggestedTableForSubCategory(groupName: string, tableMatch: TableMatch): void {
+    const table = this.tableSuggestionService.selectTable(`subcategory-${groupName}`, tableMatch, this.tables());
+    if (table) {
+      // Set the table in the sub-category form
+      const form = this.getSubCategoryBulkUpdateForm(groupName);
+      form.patchValue({ table_name: table });
+      this.subCategorySelectedTableIds.set(groupName, table.id);
+      
+      // Reset typing flag after selection
+      this.subCategoryUserTypingTable.set(groupName, false);
+      this.subCategoryTableDropdownOpen.set(groupName, false);
+      
+      this.snackBar.open(`Selected table: ${tableMatch.table_name} for ${groupName}`, 'Close', {
+        duration: 2000,
+        horizontalPosition: 'right',
+        verticalPosition: 'top'
+      });
+    } else {
+      this.snackBar.open(`Table ${tableMatch.table_name} not found in loaded tables`, 'Close', {
+        duration: 3000,
+        horizontalPosition: 'right',
+        verticalPosition: 'top'
+      });
+    }
+  }
+
+  closeSuggestedTablesForSubCategory(groupName: string): void {
+    this.tableSuggestionService.closeSuggestions(`subcategory-${groupName}`);
+  }
+
+  private getSubCategoryLines(groupName: string): Line[] {
+    const grouped = this.groupedLinesWithSorting();
+    return grouped.groups[groupName] || [];
   }
 }

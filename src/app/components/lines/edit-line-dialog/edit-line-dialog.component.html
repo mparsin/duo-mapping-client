@@ -154,7 +154,9 @@
       <!-- Search Results -->
       @if (searchResults().length > 0) {
         <div class="search-results-section">
-          <h4>Search Results</h4>
+          <div class="search-results-header">
+            <h4>Search Results</h4>
+          </div>
           <div class="search-results-list">
             @for (result of searchResults(); track result.column_id) {
               <div
@@ -173,6 +175,7 @@
           </div>
         </div>
       }
+
     </form>
   </mat-dialog-content>
 

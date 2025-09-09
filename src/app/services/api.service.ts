@@ -7,6 +7,7 @@ import { Table } from '../models/table.model';
 import { Column } from '../models/column.model';
 import { SubCategory } from '../models/sub-category.model';
 import { SearchResult } from '../models/search-result.model';
+import { TableMatch } from '../models/table-match.model';
 
 @Injectable({
   providedIn: 'root'
@@ -96,5 +97,11 @@ export class ApiService {
   // Search columns by column name
   searchColumns(columnName: string): Observable<SearchResult[]> {
     return this.http.get<SearchResult[]>(`${this.baseUrl}/search-columns?columnName=${encodeURIComponent(columnName)}`);
+  }
+
+  // Find table matches based on column names
+  findTableMatches(columnNames: string[]): Observable<TableMatch[]> {
+    const body = { column_names: columnNames };
+    return this.http.post<TableMatch[]>(`${this.baseUrl}/find-table-matches`, body);
   }
 }

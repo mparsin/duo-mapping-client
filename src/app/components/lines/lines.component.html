@@ -57,6 +57,14 @@
               <div class="title-left">
                 <mat-icon>batch_prediction</mat-icon>
                 <span>Bulk Update Commands</span>
+                <!-- Status icon for mapping completeness -->
+                <mat-icon 
+                  class="mapping-status-icon"
+                  [class.complete]="allLinesHaveCompleteMappings()"
+                  [class.incomplete]="!allLinesHaveCompleteMappings()"
+                  [title]="allLinesHaveCompleteMappings() ? 'All lines have complete table and column mappings' : 'Some lines are missing table or column mappings'">
+                  {{ allLinesHaveCompleteMappings() ? 'check_circle' : 'warning' }}
+                </mat-icon>
                 <button
                   mat-icon-button
                   (click)="toggleCategoryBulkCommands()"
@@ -112,6 +120,23 @@
                 </mat-form-field>
 
                 <button
+                  mat-stroked-button
+                  type="button"
+                  (click)="onSuggestTables()"
+                  [disabled]="loadingSuggestedTables()"
+                  class="suggest-tables-button">
+                  @if (loadingSuggestedTables()) {
+                    <mat-spinner diameter="20"></mat-spinner>
+                    Finding matches...
+                  } @else {
+                    <ng-container>
+                      <mat-icon>recommend</mat-icon>
+                      Suggest Tables
+                    </ng-container>
+                  }
+                </button>
+
+                <button
                   mat-raised-button
                   color="primary"
                   [disabled]="!selectedTableId() || bulkUpdating()"
@@ -129,6 +154,38 @@
                 </button>
               </div>
             </form>
+
+            <!-- Table Suggestions Results -->
+            @if (showSuggestedTables() && suggestedTables().length > 0) {
+              <div class="table-suggestions-section">
+                <div class="suggestions-header">
+                  <h4>Table Suggestions</h4>
+                  <button mat-icon-button (click)="closeSuggestedTables()">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                </div>
+                <div class="table-suggestions-list">
+                  @for (match of suggestedTables(); track match.table_id) {
+                    <div
+                      class="table-suggestion-item"
+                      (click)="onSelectSuggestedTable(match)">
+                      <div class="suggestion-header">
+                        <span class="table-name">{{ match.table_name }}</span>
+                        <span class="match-count">{{ match.match_count }} of {{ match.total_columns }} matches</span>
+                      </div>
+                      <div class="matched-columns">
+                        <span class="column-chip" *ngFor="let col of match.matched_columns.slice(0, 5)">
+                          {{ col }}
+                        </span>
+                        @if (match.matched_columns.length > 5) {
+                          <span class="more-columns">+{{ match.matched_columns.length - 5 }} more</span>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
             @if (bulkUpdating()) {
               <div class="bulk-update-progress">
                 <mat-progress-bar
@@ -302,18 +359,30 @@
           @for (group of getGroupKeys(); track group) {
             <div class="sub-category-group">
               <div class="sub-category-header">
-                <mat-icon>folder</mat-icon>
-                <h3>{{ group }}</h3>
-                <span class="line-count">{{ groupedLines()[group].length }} line(s)</span>
-                <button
-                  mat-icon-button
-                  (click)="toggleSubCategoryBulkCommands(group)"
-                  [class.expanded]="getSubCategoryBulkCommandsVisible(group)"
-                  [class.has-bulk-commands]="hasSubCategoryBulkCommands(group)"
-                  class="bulk-commands-toggle"
-                  [attr.aria-label]="getSubCategoryBulkCommandsVisible(group) ? 'Hide bulk commands' : 'Show bulk commands'">
-                  <mat-icon>{{ getSubCategoryBulkCommandsVisible(group) ? 'expand_less' : 'expand_more' }}</mat-icon>
-                </button>
+                <div class="left-section">
+                  <mat-icon>folder</mat-icon>
+                  <h3>{{ group }}</h3>
+                  <!-- Status icon for sub-category mapping completeness -->
+                  <mat-icon 
+                    class="mapping-status-icon sub-category-status"
+                    [class.complete]="getSubCategoryAllLinesHaveCompleteMappings(group)"
+                    [class.incomplete]="!getSubCategoryAllLinesHaveCompleteMappings(group)"
+                    [title]="getSubCategoryAllLinesHaveCompleteMappings(group) ? 'All lines in ' + group + ' have complete table and column mappings' : 'Some lines in ' + group + ' are missing table or column mappings'">
+                    {{ getSubCategoryAllLinesHaveCompleteMappings(group) ? 'check_circle' : 'warning' }}
+                  </mat-icon>
+                </div>
+                <div class="right-section">
+                  <span class="line-count">{{ groupedLines()[group].length }} line(s)</span>
+                  <button
+                    mat-icon-button
+                    (click)="toggleSubCategoryBulkCommands(group)"
+                    [class.expanded]="getSubCategoryBulkCommandsVisible(group)"
+                    [class.has-bulk-commands]="hasSubCategoryBulkCommands(group)"
+                    class="bulk-commands-toggle"
+                    [attr.aria-label]="getSubCategoryBulkCommandsVisible(group) ? 'Hide bulk commands' : 'Show bulk commands'">
+                    <mat-icon>{{ getSubCategoryBulkCommandsVisible(group) ? 'expand_less' : 'expand_more' }}</mat-icon>
+                  </button>
+                </div>
               </div>
 
               <!-- Sub-category Bulk Update Section -->
@@ -366,6 +435,23 @@
                         </mat-form-field>
 
                         <button
+                          mat-stroked-button
+                          type="button"
+                          (click)="onSuggestTablesForSubCategory(group)"
+                          [disabled]="getSubCategoryLoadingSuggestedTables(group)"
+                          class="suggest-tables-button">
+                          @if (getSubCategoryLoadingSuggestedTables(group)) {
+                            <mat-spinner diameter="20"></mat-spinner>
+                            Finding matches...
+                          } @else {
+                            <ng-container>
+                              <mat-icon>recommend</mat-icon>
+                              Suggest Tables
+                            </ng-container>
+                          }
+                        </button>
+
+                        <button
                           mat-raised-button
                           color="primary"
                           [disabled]="!getSubCategorySelectedTableId(group) || getSubCategoryBulkUpdating(group)"
@@ -383,6 +469,38 @@
                         </button>
                       </div>
                     </form>
+
+                    <!-- Sub-category Table Suggestions Results -->
+                    @if (getSubCategoryShowSuggestedTables(group) && getSubCategorySuggestedTables(group).length > 0) {
+                      <div class="table-suggestions-section">
+                        <div class="suggestions-header">
+                          <h4>Table Suggestions for {{ group }}</h4>
+                          <button mat-icon-button (click)="closeSuggestedTablesForSubCategory(group)">
+                            <mat-icon>close</mat-icon>
+                          </button>
+                        </div>
+                        <div class="table-suggestions-list">
+                          @for (match of getSubCategorySuggestedTables(group); track match.table_id) {
+                            <div
+                              class="table-suggestion-item"
+                              (click)="onSelectSuggestedTableForSubCategory(group, match)">
+                              <div class="suggestion-header">
+                                <span class="table-name">{{ match.table_name }}</span>
+                                <span class="match-count">{{ match.match_count }} of {{ match.total_columns }} matches</span>
+                              </div>
+                              <div class="matched-columns">
+                                <span class="column-chip" *ngFor="let col of match.matched_columns.slice(0, 5)">
+                                  {{ col }}
+                                </span>
+                                @if (match.matched_columns.length > 5) {
+                                  <span class="more-columns">+{{ match.matched_columns.length - 5 }} more</span>
+                                }
+                              </div>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    }
                     @if (getSubCategoryBulkUpdating(group)) {
                       <div class="bulk-update-progress">
                         <mat-progress-bar

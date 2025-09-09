@@ -164,11 +164,32 @@ mat-spinner {
   background-color: #fafafa;
 }
 
+.search-results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  min-height: 24px;
+  width: 100%;
+}
+
 .search-results-section h4 {
-  margin: 0 0 12px 0;
+  margin: 0;
   font-size: 16px;
   font-weight: 500;
   color: #333;
+}
+
+.match-badge {
+  background-color: #2196f3;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: fit-content;
 }
 
 .search-results-list {
@@ -231,3 +252,4 @@ mat-spinner {
   color: #666;
   font-style: italic;
 }
+

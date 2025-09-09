@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit, signal, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, Inject, OnInit, signal, computed, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -596,5 +596,6 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
     const fieldName = this.data.line.field_name;
     return !!(fieldName && fieldName.trim());
   }
+
 
 }
