@@ -1,1 +1,22 @@
-<router-outlet />
+<div class="app-container">
+  <!-- Global Header with Generate Schema Button -->
+  <mat-toolbar class="app-toolbar" color="primary">
+    <span class="app-title">{{ title() }}</span>
+    <span class="spacer"></span>
+    <button 
+      mat-raised-button 
+      color="warn" 
+      (click)="generateSchema()"
+      class="generate-schema-btn"
+      matTooltip="Generate Schema Configuration File"
+      matTooltipPosition="below">
+      <mat-icon>download</mat-icon>
+      Generate Schema
+    </button>
+  </mat-toolbar>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <router-outlet />
+  </div>
+</div>

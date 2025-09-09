@@ -1,6 +1,6 @@
 .master-detail-container {
   display: flex;
-  height: 100vh;
+  height: calc(100vh - 64px); /* Subtract toolbar height */
   overflow: hidden;
 }
 
