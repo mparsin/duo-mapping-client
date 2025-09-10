@@ -3,13 +3,24 @@
   <div class="categories-sidebar">
     <div class="sidebar-header">
       <h2>Categories</h2>
-      <button
-        mat-icon-button
-        (click)="refreshCategories()"
-        [disabled]="categoriesLoading()"
-        aria-label="Refresh categories">
-        <mat-icon>refresh</mat-icon>
-      </button>
+      <div class="header-actions">
+        <button
+          mat-icon-button
+          (click)="navigateToHome()"
+          [class.active]="!selectedCategory()"
+          aria-label="Go to home"
+          matTooltip="Go to home">
+          <mat-icon>home</mat-icon>
+        </button>
+        <button
+          mat-icon-button
+          (click)="refreshCategories()"
+          [disabled]="categoriesLoading()"
+          aria-label="Refresh categories"
+          matTooltip="Refresh categories">
+          <mat-icon>refresh</mat-icon>
+        </button>
+      </div>
     </div>
 
     <div class="sidebar-content">

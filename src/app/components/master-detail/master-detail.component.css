@@ -31,6 +31,24 @@
   font-weight: 500;
 }
 
+.header-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.header-actions button {
+  color: white;
+}
+
+.header-actions button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.header-actions button.active {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
 .sidebar-content {
   flex: 1;
   overflow-y: auto;

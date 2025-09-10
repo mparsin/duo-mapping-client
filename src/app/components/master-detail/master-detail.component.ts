@@ -8,10 +8,12 @@ import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatChipsModule } from '@angular/material/chips';
 import { Subscription } from 'rxjs';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { CategoryRefreshService } from '../../services/category-refresh.service';
 import { Category } from '../../models/category.model';
 import { LinesComponent } from '../lines/lines.component';
+import {MatTooltip} from '@angular/material/tooltip-module.d';
 
 @Component({
   selector: 'app-master-detail',
@@ -25,7 +27,8 @@ import { LinesComponent } from '../lines/lines.component';
     MatSnackBarModule,
     MatToolbarModule,
     MatChipsModule,
-    LinesComponent
+    LinesComponent,
+    MatTooltip
   ],
   templateUrl: './master-detail.component.html',
   styleUrl: './master-detail.component.css'
@@ -40,7 +43,9 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
   constructor(
     private apiService: ApiService,
     private categoryRefreshService: CategoryRefreshService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private route: ActivatedRoute,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -49,6 +54,18 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
     // Subscribe to category refresh events
     this.refreshSubscription = this.categoryRefreshService.categoryRefresh$.subscribe(categoryId => {
       this.refreshCategory(categoryId);
+    });
+
+    // Subscribe to route parameter changes
+    this.route.params.subscribe(params => {
+      const categoryId = params['id'];
+      if (categoryId) {
+        // If there's a category ID in the route, select that category
+        this.selectCategoryById(parseInt(categoryId, 10));
+      } else {
+        // If no category ID in route, clear selection
+        this.selectedCategory.set(null);
+      }
     });
   }
 
@@ -66,8 +83,14 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
       next: (categories) => {
         this.categories.set(categories);
         this.categoriesLoading.set(false);
-        // Auto-select first category if available
-        if (categories.length > 0) {
+
+        // Check if there's a category ID in the route
+        const categoryId = this.route.snapshot.params['id'];
+        if (categoryId) {
+          // Select the category from the route
+          this.selectCategoryById(parseInt(categoryId, 10));
+        } else if (categories.length > 0) {
+          // Auto-select first category if no route parameter
           this.selectCategory(categories[0]);
         }
       },
@@ -86,6 +109,32 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
 
   selectCategory(category: Category): void {
     this.selectedCategory.set(category);
+    // Navigate to the category-specific URL
+    this.router.navigate(['/category', category.id], { replaceUrl: true });
+  }
+
+  navigateToHome(): void {
+    this.selectedCategory.set(null);
+    this.router.navigate(['/'], { replaceUrl: true });
+  }
+
+  selectCategoryById(categoryId: number): void {
+    const category = this.categories().find(cat => cat.id === categoryId);
+    if (category) {
+      this.selectedCategory.set(category);
+    } else {
+      // If category not found in current list, try to load it individually
+      this.apiService.getCategory(categoryId).subscribe({
+        next: (category) => {
+          this.selectedCategory.set(category);
+        },
+        error: (error) => {
+          console.error('Error loading specific category:', error);
+          // If category doesn't exist, redirect to home
+          this.router.navigate(['/']);
+        }
+      });
+    }
   }
 
   refreshCategories(): void {

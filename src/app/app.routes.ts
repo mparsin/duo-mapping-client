@@ -3,5 +3,6 @@ import { MasterDetailComponent } from './components/master-detail/master-detail.
 
 export const routes: Routes = [
   { path: '', component: MasterDetailComponent },
+  { path: 'category/:id', component: MasterDetailComponent },
   { path: '**', redirectTo: '' }
 ];
