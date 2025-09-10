@@ -198,7 +198,7 @@ Click **"New repository secret"** for each of these:
 
 #### Secret 4: CLOUDFRONT_DISTRIBUTION_ID (Optional)
 - **Name**: `CLOUDFRONT_DISTRIBUTION_ID`
-- **Secret**: Leave empty for now (we'll add this if you set up CloudFront)
+- **Secret**: Leave empty for now (we'll add this if you set up CloudFront) ''
 - Click **"Add secret"**
 
 ## Part 4: Test Your Setup
