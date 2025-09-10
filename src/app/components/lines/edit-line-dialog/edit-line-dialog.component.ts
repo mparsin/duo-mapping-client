@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit, signal, computed, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, Inject, OnInit, signal, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,9 +10,10 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { Observable, map, startWith } from 'rxjs';
 import { ApiService } from '../../../services/api.service';
+import { CategoryRefreshService } from '../../../services/category-refresh.service';
 import { Line } from '../../../models/line.model';
 import { Table } from '../../../models/table.model';
 import { Column } from '../../../models/column.model';
@@ -20,6 +21,7 @@ import { SearchResult } from '../../../models/search-result.model';
 
 export interface EditLineDialogData {
   line: Line;
+  categoryId?: number;
 }
 
 @Component({
@@ -74,6 +76,7 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
     @Inject(MAT_DIALOG_DATA) public data: EditLineDialogData,
     private fb: FormBuilder,
     private apiService: ApiService,
+    private categoryRefreshService: CategoryRefreshService,
     private snackBar: MatSnackBar
   ) {
     this.editForm = this.fb.group({
@@ -375,7 +378,7 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
 
     // Try to find an exact match (case insensitive)
     const fieldNameLower = fieldName.toLowerCase().trim();
-    const exactMatch = availableColumns.find(column => 
+    const exactMatch = availableColumns.find(column =>
       column.name.toLowerCase().trim() === fieldNameLower
     );
 
@@ -388,8 +391,8 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
       });
     } else {
       // Try partial match if no exact match found
-      const partialMatch = availableColumns.find(column => 
-        column.name.toLowerCase().includes(fieldNameLower) || 
+      const partialMatch = availableColumns.find(column =>
+        column.name.toLowerCase().includes(fieldNameLower) ||
         fieldNameLower.includes(column.name.toLowerCase())
       );
 
@@ -416,7 +419,7 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
     const hasTable = tableValue && (typeof tableValue === 'object' ? tableValue.id : tableValue);
     const hasFieldName = this.data.line.field_name && this.data.line.field_name.trim();
     const hasColumns = this.columns().length > 0 && !this.loadingColumns();
-    
+
     return !!(hasTable && hasFieldName && hasColumns);
   }
 
@@ -425,7 +428,7 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
     // Reset the typing flag
     this.userTypingColumn = false;
     this.columnDropdownOpen = false;
-    
+
     this.snackBar.open('Column cleared', 'Close', {
       duration: 2000
     });
@@ -433,23 +436,23 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
 
   onClearTable(): void {
     // Clear both table and column since column depends on table
-    this.editForm.patchValue({ 
+    this.editForm.patchValue({
       table_name: '',
-      column_name: '' 
+      column_name: ''
     });
-    
+
     // Reset columns array
     this.columns.set([]);
-    
+
     // Disable column field
     this.editForm.get('column_name')?.disable();
-    
+
     // Reset typing flags
     this.userTypingTable = false;
     this.userTypingColumn = false;
     this.tableDropdownOpen = false;
     this.columnDropdownOpen = false;
-    
+
     this.snackBar.open('Table and column cleared', 'Close', {
       duration: 2000
     });
@@ -467,24 +470,24 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
 
   onSave(): void {
     const formValue = this.editForm.value;
-    
+
     // Get table_id and column_id from the selected objects
     // If no value is selected, send 0 to clear the field on the server
     let tableId: number | undefined;
     let columnId: number | undefined;
-    
+
     if (formValue.table_name) {
-      tableId = typeof formValue.table_name === 'object' 
-        ? formValue.table_name?.id 
+      tableId = typeof formValue.table_name === 'object'
+        ? formValue.table_name?.id
         : this.tables().find(t => t.name === formValue.table_name)?.id;
     }
-    
+
     if (formValue.column_name) {
-      columnId = typeof formValue.column_name === 'object' 
-        ? formValue.column_name?.id 
+      columnId = typeof formValue.column_name === 'object'
+        ? formValue.column_name?.id
         : this.columns().find(c => c.name === formValue.column_name)?.id;
     }
-    
+
     // Use 0 to clear the value on the server if nothing is selected
     const tableIdToSend = tableId || 0;
     const columnIdToSend = columnId || 0;
@@ -504,10 +507,16 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
           table_id: tableId,
           column_id: columnId
         };
-        
+
         this.snackBar.open('Line saved successfully', 'Close', {
           duration: 2000
         });
+
+        // Trigger category refresh if categoryId is available
+        if (this.data.categoryId) {
+          this.categoryRefreshService.refreshCategory(this.data.categoryId);
+        }
+
         this.dialogRef.close(updatedLine);
       },
       error: (error) => {
@@ -536,7 +545,7 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
       next: (results) => {
         this.searchResults.set(results);
         this.loadingSearch.set(false);
-        
+
         if (results.length === 0) {
           this.snackBar.open('No matching columns found', 'Close', {
             duration: 3000
@@ -559,16 +568,16 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
 
   onSearchResultSelected(result: SearchResult): void {
     this.selectedSearchResult.set(result);
-    
+
     // Find the table in the loaded tables
     const table = this.tables().find(t => t.name === result.table_name);
     if (table) {
       // Set the table in the form
       this.editForm.patchValue({ table_name: table });
-      
+
       // Load columns for this table
       this.loadColumns(table.id);
-      
+
       // After columns are loaded, find and set the column
       setTimeout(() => {
         const column = this.columns().find(c => c.name === result.column_name);

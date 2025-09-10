@@ -3,8 +3,8 @@
   <div class="categories-sidebar">
     <div class="sidebar-header">
       <h2>Categories</h2>
-      <button 
-        mat-icon-button 
+      <button
+        mat-icon-button
         (click)="refreshCategories()"
         [disabled]="categoriesLoading()"
         aria-label="Refresh categories">
@@ -34,12 +34,30 @@
       } @else {
         <div class="categories-list">
           @for (category of categories(); track category.id) {
-            <mat-card 
-              class="category-item" 
+            <mat-card
+              class="category-item"
               [class.selected]="selectedCategory()?.id === category.id"
+              [class.fully-mapped]="category.percent_mapped === 100"
               (click)="selectCategory(category)">
+              
+              <!-- Progress bar background -->
+              <div
+                class="progress-background"
+                [style.width.%]="category.percent_mapped || 0">
+              </div>
+              
               <mat-card-content>
-                <h3>{{ category.Name }}</h3>
+                <div class="category-header">
+                  <h3>{{ category.Name }}</h3>
+                  @if (category.percent_mapped !== undefined) {
+                    <div class="percentage-badge">
+                      {{ roundPercentage(category.percent_mapped) }}%
+                    </div>
+                  }
+                  @if (category.percent_mapped === 100) {
+                    <mat-icon class="check-icon">check_circle</mat-icon>
+                  }
+                </div>
                 @if (category.description) {
                   <p class="category-description">{{ category.description }}</p>
                 }
@@ -60,8 +78,8 @@
         <p>Select a category from the left sidebar to view its lines</p>
       </div>
     } @else {
-      <app-lines 
-        [categoryId]="selectedCategory()!.id" 
+      <app-lines
+        [categoryId]="selectedCategory()!.id"
         [categoryName]="selectedCategory()!.Name"
         [showToolbar]="false">
       </app-lines>

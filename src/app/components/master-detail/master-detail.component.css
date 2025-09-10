@@ -75,6 +75,8 @@
   border-radius: 8px;
   background: white;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
 }
 
 .category-item:hover {
@@ -93,15 +95,35 @@
   padding: 16px;
 }
 
+.category-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
 .category-item h3 {
-  margin: 0 0 8px 0;
+  margin: 0;
   font-size: 1rem;
   font-weight: 500;
   color: #333;
+  flex: 1;
 }
 
 .category-item.selected h3 {
   color: #1976d2;
+}
+
+.percentage-badge {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  min-width: 32px;
+  text-align: center;
+  border: 1px solid #bbdefb;
 }
 
 .category-description {
@@ -109,6 +131,44 @@
   font-size: 0.875rem;
   color: #666;
   line-height: 1.4;
+}
+
+/* Progress bar background */
+.progress-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  transition: width 0.3s ease;
+  z-index: 1;
+}
+
+/* Fully mapped category styling */
+.category-item.fully-mapped .progress-background {
+  background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
+}
+
+.category-item.fully-mapped .percentage-badge {
+  background-color: #e8f5e8;
+  color: #4caf50;
+  border-color: #c8e6c9;
+}
+
+/* Check icon for fully mapped categories */
+.check-icon {
+  color: #4caf50;
+  margin-left: 8px;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+
+/* Ensure content is above progress background */
+.category-item mat-card-content {
+  position: relative;
+  z-index: 2;
 }
 
 /* Lines Content */

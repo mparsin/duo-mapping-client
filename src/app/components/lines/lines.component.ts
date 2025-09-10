@@ -19,6 +19,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { Observable, map, startWith, forkJoin, of, catchError } from 'rxjs';
 import { ApiService } from '../../services/api.service';
+import { CategoryRefreshService } from '../../services/category-refresh.service';
 import { Line } from '../../models/line.model';
 import { Table } from '../../models/table.model';
 import { Column } from '../../models/column.model';
@@ -215,6 +216,7 @@ export class LinesComponent implements OnInit, OnDestroy, OnChanges {
     private snackBar: MatSnackBar,
     private dialog: MatDialog,
     private tableSuggestionService: TableSuggestionService,
+    private categoryRefreshService: CategoryRefreshService,
     private fb: FormBuilder
   ) {
     this.bulkUpdateForm = this.fb.group({
@@ -376,12 +378,22 @@ export class LinesComponent implements OnInit, OnDestroy, OnChanges {
       this.apiService.getLinesByCategory(this.categoryId).subscribe({
         next: (lines) => {
           this.lines.set(lines);
+          // Trigger category refresh to update progress
+          this.triggerCategoryRefresh();
         },
         error: (error) => {
           console.error('Error updating lines data:', error);
           // Don't show error snackbar for background updates
         }
       });
+    }
+  }
+
+  // Trigger category refresh to update progress bar
+  private triggerCategoryRefresh(): void {
+    if (this.categoryId) {
+      console.log('Triggering category refresh for category ID:', this.categoryId);
+      this.categoryRefreshService.refreshCategory(this.categoryId);
     }
   }
 
@@ -548,7 +560,10 @@ export class LinesComponent implements OnInit, OnDestroy, OnChanges {
   openEditDialog(line: Line): void {
     const dialogRef = this.dialog.open(EditLineDialogComponent, {
       width: '500px',
-      data: { line: line }
+      data: { 
+        line: line,
+        categoryId: this.categoryId
+      }
     });
 
     dialogRef.afterClosed().subscribe(result => {
@@ -560,6 +575,9 @@ export class LinesComponent implements OnInit, OnDestroy, OnChanges {
           currentLines[index] = { ...currentLines[index], ...result };
           this.lines.set([...currentLines]);
         }
+
+        // Trigger category refresh to update progress
+        this.triggerCategoryRefresh();
 
         // Note: Success message is now handled in the dialog component
         // No need to show another success message here

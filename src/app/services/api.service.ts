@@ -13,7 +13,7 @@ import { TableMatch } from '../models/table-match.model';
   providedIn: 'root'
 })
 export class ApiService {
-  private baseUrl = 'http://localhost:8000/api';
+  private baseUrl = 'https://xwrhlmtfk9.execute-api.us-east-1.amazonaws.com/prod/api';
 
   constructor(private http: HttpClient) { }
 
@@ -25,6 +25,11 @@ export class ApiService {
   // Get all categories
   getCategories(): Observable<Category[]> {
     return this.http.get<Category[]>(`${this.baseUrl}/categories`);
+  }
+
+  // Get a single category by ID
+  getCategory(categoryId: number): Observable<Category> {
+    return this.http.get<Category>(`${this.baseUrl}/categories/${categoryId}`);
   }
 
   // Get lines for a specific category

@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -7,7 +7,9 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatChipsModule } from '@angular/material/chips';
+import { Subscription } from 'rxjs';
 import { ApiService } from '../../services/api.service';
+import { CategoryRefreshService } from '../../services/category-refresh.service';
 import { Category } from '../../models/category.model';
 import { LinesComponent } from '../lines/lines.component';
 
@@ -28,19 +30,32 @@ import { LinesComponent } from '../lines/lines.component';
   templateUrl: './master-detail.component.html',
   styleUrl: './master-detail.component.css'
 })
-export class MasterDetailComponent implements OnInit {
+export class MasterDetailComponent implements OnInit, OnDestroy {
   categories = signal<Category[]>([]);
   selectedCategory = signal<Category | null>(null);
   categoriesLoading = signal<boolean>(false);
   categoriesError = signal<string | null>(null);
+  private refreshSubscription?: Subscription;
 
   constructor(
     private apiService: ApiService,
+    private categoryRefreshService: CategoryRefreshService,
     private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
     this.loadCategories();
+
+    // Subscribe to category refresh events
+    this.refreshSubscription = this.categoryRefreshService.categoryRefresh$.subscribe(categoryId => {
+      this.refreshCategory(categoryId);
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.refreshSubscription) {
+      this.refreshSubscription.unsubscribe();
+    }
   }
 
   loadCategories(): void {
@@ -75,6 +90,37 @@ export class MasterDetailComponent implements OnInit {
 
   refreshCategories(): void {
     this.loadCategories();
+  }
+
+  refreshCategory(categoryId: number): void {
+    console.log('Master-detail: Refreshing category ID:', categoryId);
+    this.apiService.getCategory(categoryId).subscribe({
+      next: (updatedCategory) => {
+        console.log('Master-detail: Received updated category:', updatedCategory);
+        const currentCategories = this.categories();
+        const index = currentCategories.findIndex(cat => cat.id === categoryId);
+        if (index !== -1) {
+          const updatedCategories = [...currentCategories];
+          updatedCategories[index] = updatedCategory;
+          this.categories.set(updatedCategories);
+
+          // Update selected category if it's the one being refreshed
+          if (this.selectedCategory()?.id === categoryId) {
+            this.selectedCategory.set(updatedCategory);
+          }
+          console.log('Master-detail: Updated categories signal with new percentage:', updatedCategory.percent_mapped);
+        }
+      },
+      error: (error) => {
+        console.error('Error refreshing category:', error);
+        // Optionally show a snackbar or handle the error
+      }
+    });
+  }
+
+  // Helper method to round percentage for template
+  roundPercentage(percentage: number | undefined): number {
+    return percentage ? Math.round(percentage) : 0;
   }
 }
 
