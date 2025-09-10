@@ -1,8 +1,21 @@
 <div class="app-container">
-  <!-- Global Header with Generate Schema Button -->
+  <!-- Global Header with Overall Progress Badge and Generate Schema Button -->
   <mat-toolbar class="app-toolbar" color="primary">
     <span class="app-title">{{ title() }}</span>
     <span class="spacer"></span>
+    
+    <!-- Overall Progress Badge -->
+    <mat-chip-set class="progress-chip-set">
+      <mat-chip 
+        class="overall-progress-chip"
+        [class.completed]="overallProgress() === 100"
+        matTooltip="Overall mapping progress across all categories"
+        matTooltipPosition="below">
+        <mat-icon matChipAvatar>assessment</mat-icon>
+        Overall: {{ overallProgress() }}%
+      </mat-chip>
+    </mat-chip-set>
+    
     <button 
       mat-raised-button 
       color="warn" 

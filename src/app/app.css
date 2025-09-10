@@ -22,6 +22,54 @@
   flex: 1 1 auto;
 }
 
+/* Overall Progress Badge */
+.progress-chip-set {
+  margin-right: 16px;
+}
+
+.overall-progress-chip {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  font-weight: 600;
+  font-size: 0.9rem;
+  height: 40px;
+  transition: all 0.3s ease;
+}
+
+.overall-progress-chip:hover {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.overall-progress-chip.completed {
+  background-color: rgba(76, 175, 80, 0.2) !important;
+  border-color: rgba(76, 175, 80, 0.5);
+  animation: completedGlow 2s infinite;
+}
+
+.overall-progress-chip .mat-mdc-chip-avatar {
+  color: white !important;
+}
+
+.overall-progress-chip.completed .mat-mdc-chip-avatar {
+  color: #4caf50 !important;
+}
+
+/* Glow animation for completed state */
+@keyframes completedGlow {
+  0% {
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(76, 175, 80, 0.8);
+  }
+  100% {
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+  }
+}
+
 .generate-schema-btn {
   margin-left: 16px;
   font-weight: 600;
@@ -59,7 +107,8 @@
 
 .main-content {
   flex: 1;
-  overflow: auto;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 /* Snackbar styling for schema generation messages */
