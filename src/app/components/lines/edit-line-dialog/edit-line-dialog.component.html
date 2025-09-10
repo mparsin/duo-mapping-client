@@ -103,6 +103,19 @@
         </button>
       </div>
 
+      <!-- Comment Field -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Comment</mat-label>
+        <textarea
+          matInput
+          formControlName="comment"
+          placeholder="Enter comment..."
+          rows="3"
+          maxlength="500">
+        </textarea>
+        <mat-hint align="end">{{ editForm.get('comment')?.value?.length || 0 }}/500</mat-hint>
+      </mat-form-field>
+
       <!-- Auto-match button -->
       <div class="auto-match-section">
         <button

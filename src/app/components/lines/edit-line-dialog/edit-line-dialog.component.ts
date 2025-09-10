@@ -81,7 +81,8 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
   ) {
     this.editForm = this.fb.group({
       table_name: [''],
-      column_name: [{value: '', disabled: true}]
+      column_name: [{value: '', disabled: true}],
+      comment: ['']
     });
   }
 
@@ -207,6 +208,11 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
         if (this.data.line.column_name) {
           this.editForm.patchValue({
             column_name: this.data.line.column_name
+          });
+        }
+        if (this.data.line.comment) {
+          this.editForm.patchValue({
+            comment: this.data.line.comment
           });
         }
       },
@@ -492,8 +498,11 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
     const tableIdToSend = tableId || 0;
     const columnIdToSend = columnId || 0;
 
+    // Get comment value from form
+    const commentValue = formValue.comment || '';
+
     // Send PATCH request to /api/lines/{line_id}
-    this.apiService.updateLine(this.data.line.id, tableIdToSend, columnIdToSend).subscribe({
+    this.apiService.updateLine(this.data.line.id, tableIdToSend, columnIdToSend, commentValue).subscribe({
       next: (savedLine) => {
         // Create updated line object with the new table and column names
         const updatedLine: Line = {
@@ -505,7 +514,8 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
             ? formValue.column_name
             : formValue.column_name?.name || '',
           table_id: tableId,
-          column_id: columnId
+          column_id: columnId,
+          comment: commentValue
         };
 
         this.snackBar.open('Line saved successfully', 'Close', {

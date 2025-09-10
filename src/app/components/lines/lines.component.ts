@@ -106,7 +106,7 @@ export class LinesComponent implements OnInit, OnDestroy, OnChanges {
   tableDropdownOpen = false;
   private userTypingTable = false;
 
-  displayedColumns: string[] = ['id', 'name', 'field_name', 'table_name', 'column_name', 'default', 'reason'];
+  displayedColumns: string[] = ['id', 'name', 'field_name', 'table_name', 'column_name', 'default', 'reason', 'comment'];
 
   // Computed properties for bulk update functionality
   linesWithoutTable = computed(() =>
@@ -544,6 +544,11 @@ export class LinesComponent implements OnInit, OnDestroy, OnChanges {
     return !!(line.table_id || line.table_name) && !line.column_id && !line.column_name && !!line.field_name;
   }
 
+  // Method to determine if a line has a comment
+  hasComment(line: Line): boolean {
+    return !!(line.comment && line.comment.trim());
+  }
+
   // Method to get CSS classes for highlighting
   getRowClasses(line: Line): string {
     const baseClasses = 'clickable-row';
@@ -553,6 +558,9 @@ export class LinesComponent implements OnInit, OnDestroy, OnChanges {
     } else if (this.needsColumnHighlighting(line)) {
       // console.log(`Line ${line.id} needs column highlighting:`, line);
       return `${baseClasses} highlight-missing-column test-highlight`;
+    } else if (this.hasComment(line)) {
+      // console.log(`Line ${line.id} has comment:`, line);
+      return `${baseClasses} highlight-has-comment`;
     }
     return baseClasses;
   }

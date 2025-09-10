@@ -11,6 +11,7 @@ export interface Line {
   no_of_chars?: string;
   field_name?: string;
   reason?: string;
+  comment?: string;
   sub_category_id?: number;
   table_name?: string;
   column_name?: string;

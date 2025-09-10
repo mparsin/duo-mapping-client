@@ -126,6 +126,15 @@
   background-color: #bee5eb !important;
 }
 
+.lines-table tr.highlight-has-comment {
+  background-color: #f3e5f5 !important;
+  border-left: 4px solid #9c27b0 !important;
+}
+
+.lines-table tr.highlight-has-comment:hover {
+  background-color: #e1bee7 !important;
+}
+
 /* Additional specificity for sub-category groups */
 .sub-category-group .lines-table tr.highlight-missing-table {
   background-color: #fff3cd !important;
@@ -143,6 +152,15 @@
 
 .sub-category-group .lines-table tr.highlight-missing-column:hover {
   background-color: #bee5eb !important;
+}
+
+.sub-category-group .lines-table tr.highlight-has-comment {
+  background-color: #f3e5f5 !important;
+  border-left: 4px solid #9c27b0 !important;
+}
+
+.sub-category-group .lines-table tr.highlight-has-comment:hover {
+  background-color: #e1bee7 !important;
 }
 
 /* Force highlighting with maximum specificity */
@@ -164,6 +182,15 @@
   background-color: #bee5eb !important;
 }
 
+.mat-mdc-table .mat-mdc-row.highlight-has-comment {
+  background-color: #f3e5f5 !important;
+  border-left: 4px solid #9c27b0 !important;
+}
+
+.mat-mdc-table .mat-mdc-row.highlight-has-comment:hover {
+  background-color: #e1bee7 !important;
+}
+
 /* Even more specific for Angular Material tables */
 table.mat-mdc-table tr.mat-mdc-row.highlight-missing-table {
   background-color: #fff3cd !important;
@@ -173,6 +200,11 @@ table.mat-mdc-table tr.mat-mdc-row.highlight-missing-table {
 table.mat-mdc-table tr.mat-mdc-row.highlight-missing-column {
   background-color: #d1ecf1 !important;
   border-left: 4px solid #17a2b8 !important;
+}
+
+table.mat-mdc-table tr.mat-mdc-row.highlight-has-comment {
+  background-color: #f3e5f5 !important;
+  border-left: 4px solid #9c27b0 !important;
 }
 
 /* Ultra-specific targeting for debugging */

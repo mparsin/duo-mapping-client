@@ -48,11 +48,14 @@ export class ApiService {
   }
 
   // Update a line
-  updateLine(lineId: number, tableId: number, columnId: number): Observable<Line> {
-    const body = {
+  updateLine(lineId: number, tableId: number, columnId: number, comment?: string): Observable<Line> {
+    const body: any = {
       table_id: tableId,
       column_id: columnId
     };
+    if (comment !== undefined) {
+      body.comment = comment;
+    }
     return this.http.patch<Line>(`${this.baseUrl}/lines/${lineId}`, body);
   }
 
