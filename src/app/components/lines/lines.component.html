@@ -373,6 +373,16 @@
                 </div>
                 <div class="right-section">
                   <span class="line-count">{{ groupedLines()[group].length }} line(s)</span>
+                  <!-- Add Comment button in header -->
+                  @if (!getSubCategoryComment(group) && !getSubCategoryEditingComment(group)) {
+                    <button
+                      mat-stroked-button
+                      (click)="startEditingSubCategoryComment(group)"
+                      class="add-comment-button-header">
+                      <mat-icon>add_comment</mat-icon>
+                      Add Comment
+                    </button>
+                  }
                   <button
                     mat-icon-button
                     (click)="toggleSubCategoryBulkCommands(group)"
@@ -384,6 +394,63 @@
                   </button>
                 </div>
               </div>
+
+              <!-- Sub-category Comment Section -->
+              @if (getSubCategoryComment(group) || getSubCategoryEditingComment(group)) {
+                <div class="sub-category-comment-section">
+                  @if (getSubCategoryEditingComment(group)) {
+                    <!-- Editing mode -->
+                    <div class="comment-editing">
+                      <mat-form-field appearance="outline" class="comment-textarea">
+                        <mat-label>Add a comment for {{ group }}</mat-label>
+                        <textarea
+                          matInput
+                          [ngModel]="getSubCategoryCommentText(group)"
+                          (ngModelChange)="subCategoryCommentText.set(group, $event)"
+                          placeholder="Enter your comment here..."
+                          rows="3"
+                          [disabled]="getSubCategorySavingComment(group)">
+                        </textarea>
+                      </mat-form-field>
+                      <div class="comment-actions">
+                        <button
+                          mat-button
+                          (click)="cancelEditingSubCategoryComment(group)"
+                          [disabled]="getSubCategorySavingComment(group)">
+                          Cancel
+                        </button>
+                        <button
+                          mat-raised-button
+                          color="primary"
+                          (click)="saveSubCategoryComment(group)"
+                          [disabled]="getSubCategorySavingComment(group)">
+                          @if (getSubCategorySavingComment(group)) {
+                            <mat-spinner diameter="20"></mat-spinner>
+                            Saving...
+                          } @else {
+                            Save Comment
+                          }
+                        </button>
+                      </div>
+                    </div>
+                  } @else {
+                    <!-- Display mode -->
+                    <div class="comment-display">
+                      <div class="comment-content">
+                        <mat-icon class="comment-icon">comment</mat-icon>
+                        <div class="comment-text">{{ getSubCategoryComment(group) }}</div>
+                      </div>
+                      <button
+                        mat-icon-button
+                        (click)="startEditingSubCategoryComment(group)"
+                        class="edit-comment-button"
+                        [attr.aria-label]="'Edit comment for ' + group">
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                    </div>
+                  }
+                </div>
+              }
 
               <!-- Sub-category Bulk Update Section -->
               @if ((getSubCategoryLinesWithoutTable(group).length > 0 || getSubCategoryLinesWithoutColumn(group).length > 0 || getSubCategoryLinesWithTable(group).length > 0 || getSubCategoryLinesWithColumn(group).length > 0) && getSubCategoryBulkCommandsVisible(group)) {

@@ -86,6 +86,14 @@ export class ApiService {
     return this.http.get<SubCategory[]>(`${this.baseUrl}/sub-categories`);
   }
 
+  // Update a sub-category
+  updateSubCategory(categoryId: number, subCategoryId: number, comment: string): Observable<SubCategory> {
+    const body = {
+      comment: comment
+    };
+    return this.http.patch<SubCategory>(`${this.baseUrl}/categories/${categoryId}/sub-categories/${subCategoryId}`, body);
+  }
+
   // Clear table assignment for a line (set table_id to 0)
   clearLineTable(lineId: number): Observable<Line> {
     const body = {

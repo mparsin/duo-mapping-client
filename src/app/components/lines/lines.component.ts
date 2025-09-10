@@ -16,7 +16,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
-import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { Observable, map, startWith, forkJoin, of, catchError } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { CategoryRefreshService } from '../../services/category-refresh.service';
@@ -48,7 +48,8 @@ import { EditLineDialogComponent } from './edit-line-dialog/edit-line-dialog.com
     MatAutocompleteModule,
     MatCardModule,
     MatDividerModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    FormsModule
   ],
   templateUrl: './lines.component.html',
   styleUrl: './lines.component.css'
@@ -99,6 +100,11 @@ export class LinesComponent implements OnInit, OnDestroy, OnChanges {
   subCategoryTableDropdownOpen = new Map<string, boolean>();
   subCategoryBulkCommandsVisible = new Map<string, boolean>();
   private subCategoryUserTypingTable = new Map<string, boolean>();
+
+  // Sub-category comment editing
+  subCategoryEditingComment = new Map<string, boolean>();
+  subCategoryCommentText = new Map<string, string>();
+  subCategorySavingComment = new Map<string, boolean>();
 
 
   // Typeahead functionality
@@ -1522,5 +1528,102 @@ export class LinesComponent implements OnInit, OnDestroy, OnChanges {
   private getSubCategoryLines(groupName: string): Line[] {
     const grouped = this.groupedLinesWithSorting();
     return grouped.groups[groupName] || [];
+  }
+
+  // Sub-category comment editing methods
+  getSubCategoryComment(groupName: string): string {
+    const subCategory = this.getSubCategoryByName(groupName);
+    return subCategory?.comment || '';
+  }
+
+  getSubCategoryEditingComment(groupName: string): boolean {
+    return this.subCategoryEditingComment.get(groupName) || false;
+  }
+
+  getSubCategoryCommentText(groupName: string): string {
+    return this.subCategoryCommentText.get(groupName) || '';
+  }
+
+  getSubCategorySavingComment(groupName: string): boolean {
+    return this.subCategorySavingComment.get(groupName) || false;
+  }
+
+  startEditingSubCategoryComment(groupName: string): void {
+    const subCategory = this.getSubCategoryByName(groupName);
+    if (subCategory) {
+      this.subCategoryEditingComment.set(groupName, true);
+      this.subCategoryCommentText.set(groupName, subCategory.comment || '');
+    }
+  }
+
+  cancelEditingSubCategoryComment(groupName: string): void {
+    this.subCategoryEditingComment.set(groupName, false);
+    this.subCategoryCommentText.set(groupName, '');
+  }
+
+  saveSubCategoryComment(groupName: string): void {
+    const categoryId = this.categoryId;
+    const subCategory = this.getSubCategoryByName(groupName);
+    
+    if (!categoryId || !subCategory) {
+      return;
+    }
+
+    const commentText = this.subCategoryCommentText.get(groupName) || '';
+    this.subCategorySavingComment.set(groupName, true);
+
+    this.apiService.updateSubCategory(categoryId, subCategory.id, commentText).subscribe({
+      next: (updatedSubCategory) => {
+        // Update the sub-category in the local state
+        const currentSubCategories = this.subCategories();
+        const index = currentSubCategories.findIndex(sc => sc.id === subCategory.id);
+        if (index !== -1) {
+          const updatedSubCategories = [...currentSubCategories];
+          updatedSubCategories[index] = updatedSubCategory;
+          this.subCategories.set(updatedSubCategories);
+        }
+
+        this.subCategoryEditingComment.set(groupName, false);
+        this.subCategoryCommentText.set(groupName, '');
+        this.subCategorySavingComment.set(groupName, false);
+
+        this.snackBar.open('Comment saved successfully', 'Close', {
+          duration: 2000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      },
+      error: (error) => {
+        console.error('Error saving sub-category comment:', error);
+        this.subCategorySavingComment.set(groupName, false);
+        this.snackBar.open('Error saving comment', 'Close', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      }
+    });
+  }
+
+  private getSubCategoryByName(groupName: string): SubCategory | undefined {
+    if (groupName === 'Uncategorized') {
+      return undefined;
+    }
+    
+    const subCategoryId = this.getSubCategoryIdFromGroupName(groupName);
+    if (subCategoryId) {
+      return this.subCategories().find(sc => sc.id === subCategoryId);
+    }
+    
+    return undefined;
+  }
+
+  private getSubCategoryIdFromGroupName(groupName: string): number | null {
+    const grouped = this.groupedLinesWithSorting();
+    const groupData = grouped.groups[groupName];
+    if (groupData && groupData.length > 0) {
+      return groupData[0].sub_category_id || null;
+    }
+    return null;
   }
 }
