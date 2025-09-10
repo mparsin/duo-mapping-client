@@ -13,7 +13,7 @@ import { ApiService } from '../../services/api.service';
 import { CategoryRefreshService } from '../../services/category-refresh.service';
 import { Category } from '../../models/category.model';
 import { LinesComponent } from '../lines/lines.component';
-import {MatTooltip} from '@angular/material/tooltip-module.d';
+import {MatTooltip} from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-master-detail',
