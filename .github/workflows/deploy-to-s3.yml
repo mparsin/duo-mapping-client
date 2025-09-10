@@ -49,11 +49,14 @@ jobs:
       env:
         CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
       run: |
-        if [ -n "$CLOUDFRONT_DISTRIBUTION_ID" ] && [ "$CLOUDFRONT_DISTRIBUTION_ID" != "" ]; then
-          echo "CloudFront Distribution ID found. Creating invalidation..."
-          aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths "/*"
+        # Trim whitespace and check if the variable has actual content
+        TRIMMED_ID=$(echo "$CLOUDFRONT_DISTRIBUTION_ID" | xargs)
+        if [ -n "$TRIMMED_ID" ] && [ "$TRIMMED_ID" != "" ]; then
+          echo "CloudFront Distribution ID found: $TRIMMED_ID"
+          echo "Creating CloudFront invalidation..."
+          aws cloudfront create-invalidation --distribution-id "$TRIMMED_ID" --paths "/*"
         else
-          echo "No CloudFront Distribution ID configured. Skipping cache invalidation."
+          echo "No CloudFront Distribution ID configured (empty or whitespace). Skipping cache invalidation."
         fi
         
     - name: Deployment Success
