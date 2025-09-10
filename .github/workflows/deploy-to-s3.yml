@@ -45,8 +45,17 @@ jobs:
       run: |
         aws s3 sync ./dist/duo-mapping-client/browser/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
         
+    - name: Check CloudFront Distribution ID
+      id: check-cloudfront
+      run: |
+        if [ -n "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
+          echo "cloudfront_enabled=true" >> $GITHUB_OUTPUT
+        else
+          echo "cloudfront_enabled=false" >> $GITHUB_OUTPUT
+        fi
+        
     - name: Invalidate CloudFront cache (optional)
-      if: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+      if: steps.check-cloudfront.outputs.cloudfront_enabled == 'true'
       run: |
         aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
         
