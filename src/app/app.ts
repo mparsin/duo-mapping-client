@@ -96,53 +96,24 @@ export class App implements OnInit, OnDestroy {
       panelClass: 'schema-generation-snackbar'
     });
 
-    // Get all categories with their mappings
-    this.apiService.getCategories().subscribe({
-      next: (categories) => {
-        // Generate schema
-        this.schemaGenerationService.generateSchema(categories).subscribe({
-          next: (schema) => {
-            // Validate schema
-            const errors = this.schemaGenerationService.validateSchema(schema);
-            
-            if (errors.length > 0) {
-              loadingSnackBar.dismiss();
-              this.snackBar.open(`Schema validation failed: ${errors.join(', ')}`, 'Close', {
-                duration: 5000,
-                horizontalPosition: 'center',
-                verticalPosition: 'top',
-                panelClass: 'error-snackbar'
-              });
-              return;
-            }
-
-            // Download the schema file
-            this.schemaGenerationService.downloadSchema(schema);
-            
-            loadingSnackBar.dismiss();
-            this.snackBar.open('Schema generated and downloaded successfully!', 'Close', {
-              duration: 3000,
-              horizontalPosition: 'center',
-              verticalPosition: 'top',
-              panelClass: 'success-snackbar'
-            });
-          },
-          error: (error) => {
-            console.error('Error generating schema:', error);
-            loadingSnackBar.dismiss();
-            this.snackBar.open('Error generating schema. Please try again.', 'Close', {
-              duration: 5000,
-              horizontalPosition: 'center',
-              verticalPosition: 'top',
-              panelClass: 'error-snackbar'
-            });
-          }
+    // Download schema from API
+    this.schemaGenerationService.downloadSchemaFromApi().subscribe({
+      next: (blob) => {
+        // Download the schema file
+        this.schemaGenerationService.downloadSchemaFromBlob(blob, 'schema-config.json');
+        
+        loadingSnackBar.dismiss();
+        this.snackBar.open('Schema generated and downloaded successfully!', 'Close', {
+          duration: 3000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top',
+          panelClass: 'success-snackbar'
         });
       },
       error: (error) => {
-        console.error('Error loading categories:', error);
+        console.error('Error downloading schema:', error);
         loadingSnackBar.dismiss();
-        this.snackBar.open('Error loading categories. Please try again.', 'Close', {
+        this.snackBar.open('Error downloading schema. Please try again.', 'Close', {
           duration: 5000,
           horizontalPosition: 'center',
           verticalPosition: 'top',

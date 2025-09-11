@@ -8,6 +8,7 @@ export interface Category {
   updatedAt?: string;
   lines?: Line[];
   percent_mapped?: number;
+  tab?: string;
 }
 
 

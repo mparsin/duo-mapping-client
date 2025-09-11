@@ -59,15 +59,22 @@
               
               <mat-card-content>
                 <div class="category-header">
-                  <h3>{{ category.Name }}</h3>
-                  @if (category.percent_mapped !== undefined) {
-                    <div class="percentage-badge">
-                      {{ roundPercentage(category.percent_mapped) }}%
-                    </div>
-                  }
-                  @if (category.percent_mapped === 100) {
-                    <mat-icon class="check-icon">check_circle</mat-icon>
-                  }
+                  <div class="category-name-section">
+                    <h3>{{ category.Name }}</h3>
+                    @if (category.tab) {
+                      <div class="tab-label">{{ category.tab }}</div>
+                    }
+                  </div>
+                  <div class="category-badges">
+                    @if (category.percent_mapped !== undefined) {
+                      <div class="percentage-badge">
+                        {{ roundPercentage(category.percent_mapped) }}%
+                      </div>
+                    }
+                    @if (category.percent_mapped === 100) {
+                      <mat-icon class="check-icon">check_circle</mat-icon>
+                    }
+                  </div>
                 </div>
                 @if (category.description) {
                   <p class="category-description">{{ category.description }}</p>

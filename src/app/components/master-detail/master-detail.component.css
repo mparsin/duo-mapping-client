@@ -115,21 +115,42 @@
 
 .category-header {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  align-items: flex-start;
   margin-bottom: 8px;
 }
 
+.category-name-section {
+  flex: 1;
+  min-width: 0; /* Allow text to wrap if needed */
+}
+
 .category-item h3 {
-  margin: 0;
+  margin: 0 0 4px 0;
   font-size: 1rem;
   font-weight: 500;
   color: #333;
-  flex: 1;
+  width: 100%;
 }
 
 .category-item.selected h3 {
   color: #1976d2;
+}
+
+.tab-label {
+  color: #666;
+  font-size: 0.75rem;
+  font-weight: 400;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.category-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: 12px;
 }
 
 .percentage-badge {

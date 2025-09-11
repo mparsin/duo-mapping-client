@@ -120,4 +120,11 @@ export class ApiService {
     const body = { column_names: columnNames };
     return this.http.post<TableMatch[]>(`${this.baseUrl}/find-table-matches`, body);
   }
+
+  // Download generated schema
+  downloadSchema(): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/download-schema`, {
+      responseType: 'blob'
+    });
+  }
 }
