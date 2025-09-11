@@ -195,13 +195,22 @@ export class LinesComponent implements OnInit, OnDestroy, OnChanges {
       groups[key] = data.lines;
     });
 
-    // Sort groups by sub-category ID (null/undefined IDs go last)
+    // Sort groups by seq_no to maintain the intended order from the API
     const groupOrder = Array.from(grouped.entries())
       .sort(([, a], [, b]) => {
-        if (a.subCategoryId === null && b.subCategoryId === null) return 0;
-        if (a.subCategoryId === null) return 1;
-        if (b.subCategoryId === null) return -1;
-        return a.subCategoryId - b.subCategoryId;
+        // Get the seq_no from the first line in each group
+        const aSeqNo = a.lines.length > 0 ? this.getSubCategorySeqNo(a.lines[0].sub_category_id || null) : 999;
+        const bSeqNo = b.lines.length > 0 ? this.getSubCategorySeqNo(b.lines[0].sub_category_id || null) : 999;
+        
+        // If both have the same seq_no, sort by sub-category ID as secondary sort
+        if (aSeqNo === bSeqNo) {
+          if (a.subCategoryId === null && b.subCategoryId === null) return 0;
+          if (a.subCategoryId === null) return 1;
+          if (b.subCategoryId === null) return -1;
+          return a.subCategoryId - b.subCategoryId;
+        }
+        
+        return aSeqNo - bSeqNo;
       })
       .map(([key]) => key);
 
@@ -1625,5 +1634,12 @@ export class LinesComponent implements OnInit, OnDestroy, OnChanges {
       return groupData[0].sub_category_id || null;
     }
     return null;
+  }
+
+  private getSubCategorySeqNo(subCategoryId: number | null): number {
+    if (!subCategoryId) return 999; // Uncategorized items go last
+    
+    const subCategory = this.subCategories().find(sc => sc.id === subCategoryId);
+    return subCategory?.seq_no || 999;
   }
 }
