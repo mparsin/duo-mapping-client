@@ -48,6 +48,22 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
     private router: Router
   ) {}
 
+  // Ensures the selected category card is scrolled into view (e.g., after refresh or route navigation)
+  private scrollSelectedIntoView(): void {
+    // Defer until the view updates with the selected state
+    setTimeout(() => {
+      const el = document.querySelector('.categories-list .category-item.selected') as HTMLElement | null;
+      if (el && typeof el.scrollIntoView === 'function') {
+        try {
+          el.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
+        } catch {
+          // Fallback for older browsers/environments
+          el.scrollIntoView();
+        }
+      }
+    }, 0);
+  }
+
   ngOnInit(): void {
     this.loadCategories();
 
@@ -111,6 +127,7 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
     this.selectedCategory.set(category);
     // Navigate to the category-specific URL
     this.router.navigate(['/category', category.id], { replaceUrl: true });
+    this.scrollSelectedIntoView();
   }
 
   navigateToHome(): void {
@@ -122,11 +139,13 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
     const category = this.categories().find(cat => cat.id === categoryId);
     if (category) {
       this.selectedCategory.set(category);
+      this.scrollSelectedIntoView();
     } else {
       // If category not found in current list, try to load it individually
       this.apiService.getCategory(categoryId).subscribe({
         next: (category) => {
           this.selectedCategory.set(category);
+          this.scrollSelectedIntoView();
         },
         error: (error) => {
           console.error('Error loading specific category:', error);
