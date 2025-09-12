@@ -43,46 +43,75 @@
           <p>No categories found</p>
         </div>
       } @else {
-        <div class="categories-list">
-          @for (category of categories(); track category.id) {
-            <mat-card
-              class="category-item"
-              [class.selected]="selectedCategory()?.id === category.id"
-              [class.fully-mapped]="category.percent_mapped === 100"
-              (click)="selectCategory(category)">
+        <mat-accordion class="categories-accordion" multi="true">
+          @for (tabGroup of categoriesByTab(); track tabGroup.tabName) {
+            <mat-expansion-panel 
+              class="tab-panel"
+              [class.fully-mapped]="isTabFullyMapped(tabGroup.categories)"
+              [class.has-selected]="tabContainsSelectedCategory(tabGroup.categories)"
+              [expanded]="tabContainsSelectedCategory(tabGroup.categories)">
               
-              <!-- Progress bar background -->
-              <div
-                class="progress-background"
-                [style.width.%]="category.percent_mapped || 0">
-              </div>
-              
-              <mat-card-content>
-                <div class="category-header">
-                  <div class="category-name-section">
-                    <h3>{{ category.Name }}</h3>
-                    @if (category.tab) {
-                      <div class="tab-label">{{ category.tab }}</div>
+              <mat-expansion-panel-header class="tab-header">
+                <mat-panel-title class="tab-title">
+                  <div class="tab-name-section">
+                    <mat-icon class="tab-icon">folder</mat-icon>
+                    <span class="tab-name">{{ tabGroup.tabName }}</span>
+                    <span class="tab-count">({{ tabGroup.categories.length }})</span>
+                    @if (tabContainsSelectedCategory(tabGroup.categories)) {
+                      <mat-icon class="selected-indicator">radio_button_checked</mat-icon>
                     }
                   </div>
-                  <div class="category-badges">
-                    @if (category.percent_mapped !== undefined) {
-                      <div class="percentage-badge">
-                        {{ roundPercentage(category.percent_mapped) }}%
+                  <div class="tab-progress-section">
+                    <div class="tab-progress-badge">
+                      {{ getTabProgress(tabGroup.categories) }}%
+                    </div>
+                    @if (isTabFullyMapped(tabGroup.categories)) {
+                      <mat-icon class="tab-check-icon">check_circle</mat-icon>
+                    }
+                  </div>
+                </mat-panel-title>
+              </mat-expansion-panel-header>
+
+              <div class="categories-list">
+                @for (category of tabGroup.categories; track category.id) {
+                  <mat-card
+                    class="category-item"
+                    [class.selected]="selectedCategory()?.id === category.id"
+                    [class.fully-mapped]="category.percent_mapped === 100"
+                    (click)="selectCategory(category)">
+                    
+                    <!-- Progress bar background -->
+                    <div
+                      class="progress-background"
+                      [style.width.%]="category.percent_mapped || 0">
+                    </div>
+                    
+                    <mat-card-content>
+                      <div class="category-header">
+                        <div class="category-name-section">
+                          <h3>{{ category.Name }}</h3>
+                        </div>
+                        <div class="category-badges">
+                          @if (category.percent_mapped !== undefined) {
+                            <div class="percentage-badge">
+                              {{ roundPercentage(category.percent_mapped) }}%
+                            </div>
+                          }
+                          @if (category.percent_mapped === 100) {
+                            <mat-icon class="check-icon">check_circle</mat-icon>
+                          }
+                        </div>
                       </div>
-                    }
-                    @if (category.percent_mapped === 100) {
-                      <mat-icon class="check-icon">check_circle</mat-icon>
-                    }
-                  </div>
-                </div>
-                @if (category.description) {
-                  <p class="category-description">{{ category.description }}</p>
+                      @if (category.description) {
+                        <p class="category-description">{{ category.description }}</p>
+                      }
+                    </mat-card-content>
+                  </mat-card>
                 }
-              </mat-card-content>
-            </mat-card>
+              </div>
+            </mat-expansion-panel>
           }
-        </div>
+        </mat-accordion>
       }
     </div>
   </div>

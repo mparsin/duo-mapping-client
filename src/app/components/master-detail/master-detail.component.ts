@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -7,6 +7,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { Subscription } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
@@ -27,6 +28,7 @@ import {MatTooltip} from '@angular/material/tooltip';
     MatSnackBarModule,
     MatToolbarModule,
     MatChipsModule,
+    MatExpansionModule,
     LinesComponent,
     MatTooltip
   ],
@@ -39,6 +41,26 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
   categoriesLoading = signal<boolean>(false);
   categoriesError = signal<string | null>(null);
   private refreshSubscription?: Subscription;
+
+  // Computed property to group categories by tab
+  categoriesByTab = computed(() => {
+    const cats = this.categories();
+    const grouped = new Map<string, Category[]>();
+    
+    cats.forEach(category => {
+      const tab = category.tab || 'Uncategorized';
+      if (!grouped.has(tab)) {
+        grouped.set(tab, []);
+      }
+      grouped.get(tab)!.push(category);
+    });
+    
+    // Convert to array of objects with tab name and categories
+    return Array.from(grouped.entries()).map(([tabName, categories]) => ({
+      tabName,
+      categories: categories // Keep original order, don't sort
+    }));
+  });
 
   constructor(
     private apiService: ApiService,
@@ -189,6 +211,28 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
   // Helper method to round percentage for template
   roundPercentage(percentage: number | undefined): number {
     return percentage ? Math.round(percentage) : 0;
+  }
+
+  // Calculate average progress for a tab
+  getTabProgress(categories: Category[]): number {
+    if (categories.length === 0) return 0;
+    
+    const totalProgress = categories.reduce((sum, category) => {
+      return sum + (category.percent_mapped || 0);
+    }, 0);
+    
+    return Math.round(totalProgress / categories.length);
+  }
+
+  // Check if all categories in a tab are fully mapped
+  isTabFullyMapped(categories: Category[]): boolean {
+    return categories.every(category => category.percent_mapped === 100);
+  }
+
+  // Check if a tab contains the selected category
+  tabContainsSelectedCategory(categories: Category[]): boolean {
+    const selected = this.selectedCategory();
+    return selected ? categories.some(cat => cat.id === selected.id) : false;
   }
 }
 
