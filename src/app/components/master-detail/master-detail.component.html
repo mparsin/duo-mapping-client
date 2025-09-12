@@ -45,13 +45,19 @@
       } @else {
         <mat-accordion class="categories-accordion" multi="true">
           @for (tabGroup of categoriesByTab(); track tabGroup.tabName) {
-            <mat-expansion-panel 
+            <mat-expansion-panel
               class="tab-panel"
               [class.fully-mapped]="isTabFullyMapped(tabGroup.categories)"
               [class.has-selected]="tabContainsSelectedCategory(tabGroup.categories)"
               [expanded]="tabContainsSelectedCategory(tabGroup.categories)">
-              
+
               <mat-expansion-panel-header class="tab-header">
+                <!-- Progress bar background for tab -->
+                <div
+                  class="tab-progress-background"
+                  [style.width.%]="getTabProgress(tabGroup.categories)">
+                </div>
+                
                 <mat-panel-title class="tab-title">
                   <div class="tab-name-section">
                     <mat-icon class="tab-icon">folder</mat-icon>
@@ -79,13 +85,13 @@
                     [class.selected]="selectedCategory()?.id === category.id"
                     [class.fully-mapped]="category.percent_mapped === 100"
                     (click)="selectCategory(category)">
-                    
+
                     <!-- Progress bar background -->
                     <div
                       class="progress-background"
                       [style.width.%]="category.percent_mapped || 0">
                     </div>
-                    
+
                     <mat-card-content>
                       <div class="category-header">
                         <div class="category-name-section">
