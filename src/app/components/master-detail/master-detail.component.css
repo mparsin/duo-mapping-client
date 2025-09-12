@@ -52,7 +52,7 @@
 .sidebar-content {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: 12px;
 }
 
 .loading-container,
@@ -206,7 +206,7 @@
 
 /* Override Material expansion panel body padding */
 .categories-accordion ::ng-deep.mat-expansion-panel-body {
-  padding: 0 12px 8px !important;
+  padding: 4px 12px 8px !important;
 }
 
 .categories-list {

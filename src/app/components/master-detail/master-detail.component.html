@@ -57,15 +57,12 @@
                   class="tab-progress-background"
                   [style.width.%]="getTabProgress(tabGroup.categories)">
                 </div>
-                
+
                 <mat-panel-title class="tab-title">
                   <div class="tab-name-section">
                     <mat-icon class="tab-icon">folder</mat-icon>
                     <span class="tab-name">{{ tabGroup.tabName }}</span>
                     <span class="tab-count">({{ tabGroup.categories.length }})</span>
-                    @if (tabContainsSelectedCategory(tabGroup.categories)) {
-                      <mat-icon class="selected-indicator">radio_button_checked</mat-icon>
-                    }
                   </div>
                   <div class="tab-progress-section">
                     <div class="tab-progress-badge">
