@@ -99,8 +99,10 @@
                   <div class="tab-name-section">
                     <mat-icon class="tab-icon">folder</mat-icon>
                     <div class="tab-name-container">
+                      <div class="tab-name-label">
                       <span class="tab-name">{{ tabGroup.tabName }}</span>
                       <span class="tab-count">({{ tabGroup.categories.length }})</span>
+                    </div>
                       @if (getTabEpic(tabGroup.categories)) {
                         <span class="tab-epic-label">{{ getTabEpic(tabGroup.categories) }}</span>
                       }

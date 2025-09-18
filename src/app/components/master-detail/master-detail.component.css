@@ -242,6 +242,12 @@
   height: 20px;
 }
 
+/* Fix expansion indicator z-index to appear above progress background */
+.categories-accordion ::ng-deep .mat-expansion-indicator {
+  z-index: 10 !important;
+  position: relative;
+}
+
 .selected-indicator {
   color: #1976d2;
   font-size: 16px;
