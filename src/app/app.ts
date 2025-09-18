@@ -1,5 +1,5 @@
 import { Component, signal, computed, OnInit, OnDestroy } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { RouterOutlet, Router } from '@angular/router';
 import { HttpClientModule } from '@angular/common/http';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
@@ -7,16 +7,21 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatInputModule } from '@angular/material/input';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatMenuModule } from '@angular/material/menu';
 import { CommonModule } from '@angular/common';
-import { Subscription } from 'rxjs';
+import { Subscription} from 'rxjs';
 import { SchemaGenerationService } from './services/schema-generation.service';
 import { ApiService } from './services/api.service';
 import { CategoryRefreshService } from './services/category-refresh.service';
 import { Category } from './models/category.model';
+import { SearchResult } from './models/search-result.model';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, HttpClientModule, MatToolbarModule, MatButtonModule, MatIconModule, MatSnackBarModule, MatTooltipModule, MatChipsModule, CommonModule],
+  imports: [RouterOutlet, HttpClientModule, MatToolbarModule, MatButtonModule, MatIconModule, MatSnackBarModule, MatTooltipModule, MatChipsModule, MatInputModule, MatFormFieldModule, MatAutocompleteModule, MatMenuModule, CommonModule],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
@@ -25,15 +30,23 @@ export class App implements OnInit, OnDestroy {
   categories = signal<Category[]>([]);
   private refreshSubscription?: Subscription;
 
+  // Search functionality
+  searchQuery = signal<string>('');
+  searchResults = signal<SearchResult[]>([]);
+  searchLoading = signal<boolean>(false);
+  searchError = signal<string | null>(null);
+  showSearchResults = signal<boolean>(false);
+  private searchSubscription?: Subscription;
+
   // Computed property to calculate overall progress
   overallProgress = computed(() => {
     const cats = this.categories();
     if (cats.length === 0) return 0;
-    
+
     const totalProgress = cats.reduce((sum, category) => {
       return sum + (category.percent_mapped || 0);
     }, 0);
-    
+
     return Math.round(totalProgress / cats.length);
   });
 
@@ -41,7 +54,8 @@ export class App implements OnInit, OnDestroy {
     private snackBar: MatSnackBar,
     private schemaGenerationService: SchemaGenerationService,
     private apiService: ApiService,
-    private categoryRefreshService: CategoryRefreshService
+    private categoryRefreshService: CategoryRefreshService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -56,6 +70,9 @@ export class App implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.refreshSubscription) {
       this.refreshSubscription.unsubscribe();
+    }
+    if (this.searchSubscription) {
+      this.searchSubscription.unsubscribe();
     }
   }
 
@@ -101,7 +118,7 @@ export class App implements OnInit, OnDestroy {
       next: (blob) => {
         // Download the schema file
         this.schemaGenerationService.downloadSchemaFromBlob(blob, 'schema-config.json');
-        
+
         loadingSnackBar.dismiss();
         this.snackBar.open('Schema generated and downloaded successfully!', 'Close', {
           duration: 3000,
@@ -121,5 +138,78 @@ export class App implements OnInit, OnDestroy {
         });
       }
     });
+  }
+
+  // Search methods
+  onSearchInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const query = target.value.trim();
+    this.searchQuery.set(query);
+
+    if (query.length >= 2) {
+      this.performSearch(query);
+    } else {
+      this.searchResults.set([]);
+      this.showSearchResults.set(false);
+    }
+  }
+
+  private performSearch(query: string): void {
+    this.searchLoading.set(true);
+    this.searchError.set(null);
+
+    if (this.searchSubscription) {
+      this.searchSubscription.unsubscribe();
+    }
+
+    this.searchSubscription = this.apiService.searchColumns(query).subscribe({
+      next: (results) => {
+        this.searchResults.set(results);
+        this.showSearchResults.set(true);
+        this.searchLoading.set(false);
+      },
+      error: (error) => {
+        console.error('Error searching columns:', error);
+        this.searchError.set('Failed to search columns');
+        this.searchResults.set([]);
+        this.showSearchResults.set(false);
+        this.searchLoading.set(false);
+      }
+    });
+  }
+
+  onSearchFocus(): void {
+    if (this.searchResults().length > 0) {
+      this.showSearchResults.set(true);
+    }
+  }
+
+  onSearchBlur(): void {
+    // Delay hiding to allow clicking on results
+    setTimeout(() => {
+      this.showSearchResults.set(false);
+    }, 200);
+  }
+
+  clearSearch(): void {
+    this.searchQuery.set('');
+    this.searchResults.set([]);
+    this.showSearchResults.set(false);
+    this.searchError.set(null);
+  }
+
+  onSearchResultClick(event: Event): void {
+    // Prevent the mousedown from causing the input to lose focus
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  navigateToCategory(categoryId: number): void {
+    this.router.navigate(['/category', categoryId]);
+    this.showSearchResults.set(false);
+  }
+
+  getSearchResultDisplayText(result: SearchResult): string {
+    return `${result.column_name} (${result.table_name})`;
   }
 }

@@ -3,10 +3,63 @@
   <mat-toolbar class="app-toolbar" color="primary">
     <span class="app-title">{{ title() }}</span>
     <span class="spacer"></span>
-    
+
+    <!-- Search Bar -->
+    <div class="search-container">
+      <div class="search-input-container">
+        <input
+          class="search-input"
+          [value]="searchQuery()"
+          (input)="onSearchInput($event)"
+          (focus)="onSearchFocus()"
+          (blur)="onSearchBlur()"
+          placeholder="Search columns..."
+          autocomplete="off">
+        <mat-icon *ngIf="searchLoading()" class="search-icon loading">refresh</mat-icon>
+        <mat-icon *ngIf="!searchLoading() && searchQuery()" (click)="clearSearch()" class="search-icon clear-icon">clear</mat-icon>
+      </div>
+
+      <!-- Search Results Dropdown -->
+      <div class="search-results" *ngIf="showSearchResults() && searchResults().length > 0" (mousedown)="onSearchResultClick($event)">
+        <div class="search-result-item" *ngFor="let result of searchResults()">
+          <div class="result-main">
+            <div class="column-name">{{ result.column_name }}</div>
+            <div class="table-name">{{ result.table_name }}</div>
+            <div class="match-type" [class.exact]="result.match_type === 'exact'">
+              {{ result.match_type }}
+            </div>
+          </div>
+          <div class="mapped-categories" *ngIf="result.mapped_categories && result.mapped_categories.length > 0">
+            <div class="categories-label">Used in categories:</div>
+            <div class="category-links">
+              <button
+                *ngFor="let category of result.mapped_categories"
+                mat-button
+                class="category-link"
+                (mousedown)="navigateToCategory(category.id); $event.preventDefault(); $event.stopPropagation()">
+                {{ category.name }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- No Results Message -->
+      <div class="search-results no-results" *ngIf="showSearchResults() && searchResults().length === 0 && !searchLoading() && searchQuery().length >= 2">
+        <div class="no-results-message">No columns found matching "{{ searchQuery() }}"</div>
+      </div>
+
+      <!-- Error Message -->
+      <div class="search-results error" *ngIf="searchError()">
+        <div class="error-message">{{ searchError() }}</div>
+      </div>
+    </div>
+
+
+
     <!-- Overall Progress Badge -->
     <mat-chip-set class="progress-chip-set">
-      <mat-chip 
+      <mat-chip
         class="overall-progress-chip"
         [class.completed]="overallProgress() === 100"
         matTooltip="Overall mapping progress across all categories"
@@ -15,10 +68,10 @@
         Overall: {{ overallProgress() }}%
       </mat-chip>
     </mat-chip-set>
-    
-    <button 
-      mat-raised-button 
-      color="warn" 
+
+    <button
+      mat-raised-button
+      color="warn"
       (click)="generateSchema()"
       class="generate-schema-btn"
       matTooltip="Generate Schema Configuration File"
