@@ -56,7 +56,8 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
     const filteredCats = filter ? cats.filter(category => 
       category.Name.toLowerCase().includes(filter) ||
       (category.description && category.description.toLowerCase().includes(filter)) ||
-      (category.tab && category.tab.toLowerCase().includes(filter))
+      (category.tab && category.tab.toLowerCase().includes(filter)) ||
+      (category.epic && category.epic.toLowerCase().includes(filter))
     ) : cats;
     
     const grouped = new Map<string, Category[]>();
@@ -259,6 +260,12 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
   tabContainsSelectedCategory(categories: Category[]): boolean {
     const selected = this.selectedCategory();
     return selected ? categories.some(cat => cat.id === selected.id) : false;
+  }
+
+  // Get the epic for a tab (returns the first epic found in the categories)
+  getTabEpic(categories: Category[]): string | null {
+    const categoryWithEpic = categories.find(category => category.epic);
+    return categoryWithEpic ? categoryWithEpic.epic! : null;
   }
 
   // Handle filter input changes

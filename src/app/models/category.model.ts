@@ -9,6 +9,7 @@ export interface Category {
   lines?: Line[];
   percent_mapped?: number;
   tab?: string;
+  epic?: string;
 }
 
 

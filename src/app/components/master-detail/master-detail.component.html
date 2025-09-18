@@ -98,8 +98,13 @@
                 <mat-panel-title class="tab-title">
                   <div class="tab-name-section">
                     <mat-icon class="tab-icon">folder</mat-icon>
-                    <span class="tab-name">{{ tabGroup.tabName }}</span>
-                    <span class="tab-count">({{ tabGroup.categories.length }})</span>
+                    <div class="tab-name-container">
+                      <span class="tab-name">{{ tabGroup.tabName }}</span>
+                      <span class="tab-count">({{ tabGroup.categories.length }})</span>
+                      @if (getTabEpic(tabGroup.categories)) {
+                        <span class="tab-epic-label">{{ getTabEpic(tabGroup.categories) }}</span>
+                      }
+                    </div>
                   </div>
                   <div class="tab-progress-section">
                     <div class="tab-progress-badge">
@@ -130,6 +135,9 @@
                       <div class="category-header">
                         <div class="category-name-section">
                           <h3>{{ category.Name }}</h3>
+                          @if (category.epic) {
+                            <span class="epic-label">{{ category.epic }}</span>
+                          }
                         </div>
                         <div class="category-badges">
                           @if (category.percent_mapped !== undefined) {

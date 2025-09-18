@@ -177,6 +177,13 @@
   flex: 1;
 }
 
+.tab-name-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
 .tab-icon {
   color: #666;
   font-size: 18px;
@@ -194,6 +201,14 @@
   color: #666;
   font-size: 0.875rem;
   font-weight: 400;
+}
+
+.tab-epic-label {
+  color: #999;
+  font-size: 0.75rem;
+  font-weight: 400;
+  font-style: italic;
+  margin-top: 2px;
 }
 
 .tab-progress-section {
@@ -292,6 +307,15 @@
   font-weight: 500;
   color: #333;
   width: 100%;
+}
+
+.epic-label {
+  color: #999;
+  font-size: 0.75rem;
+  font-weight: 400;
+  font-style: italic;
+  display: block;
+  margin-top: 2px;
 }
 
 .category-item.selected h3 {
