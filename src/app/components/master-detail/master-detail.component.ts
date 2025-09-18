@@ -8,6 +8,8 @@ import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatExpansionModule } from '@angular/material/expansion';
+import { MatInputModule } from '@angular/material/input';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { Subscription } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
@@ -29,6 +31,8 @@ import {MatTooltip} from '@angular/material/tooltip';
     MatToolbarModule,
     MatChipsModule,
     MatExpansionModule,
+    MatInputModule,
+    MatFormFieldModule,
     LinesComponent,
     MatTooltip
   ],
@@ -40,14 +44,24 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
   selectedCategory = signal<Category | null>(null);
   categoriesLoading = signal<boolean>(false);
   categoriesError = signal<string | null>(null);
+  filterText = signal<string>('');
   private refreshSubscription?: Subscription;
 
-  // Computed property to group categories by tab
+  // Computed property to group categories by tab with filtering
   categoriesByTab = computed(() => {
     const cats = this.categories();
+    const filter = this.filterText().toLowerCase().trim();
+    
+    // Filter categories based on search text
+    const filteredCats = filter ? cats.filter(category => 
+      category.Name.toLowerCase().includes(filter) ||
+      (category.description && category.description.toLowerCase().includes(filter)) ||
+      (category.tab && category.tab.toLowerCase().includes(filter))
+    ) : cats;
+    
     const grouped = new Map<string, Category[]>();
     
-    cats.forEach(category => {
+    filteredCats.forEach(category => {
       const tab = category.tab || 'Uncategorized';
       if (!grouped.has(tab)) {
         grouped.set(tab, []);
@@ -55,11 +69,23 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
       grouped.get(tab)!.push(category);
     });
     
+    // If there's a filter, also filter out empty tab groups
+    const filteredGroups = filter ? 
+      Array.from(grouped.entries()).filter(([tabName, categories]) => 
+        categories.length > 0 || tabName.toLowerCase().includes(filter)
+      ) : 
+      Array.from(grouped.entries());
+    
     // Convert to array of objects with tab name and categories
-    return Array.from(grouped.entries()).map(([tabName, categories]) => ({
+    return filteredGroups.map(([tabName, categories]) => ({
       tabName,
       categories: categories // Keep original order, don't sort
     }));
+  });
+
+  // Computed property to get total filtered categories count
+  filteredCategoriesCount = computed(() => {
+    return this.categoriesByTab().reduce((total, tabGroup) => total + tabGroup.categories.length, 0);
   });
 
   constructor(
@@ -233,6 +259,17 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
   tabContainsSelectedCategory(categories: Category[]): boolean {
     const selected = this.selectedCategory();
     return selected ? categories.some(cat => cat.id === selected.id) : false;
+  }
+
+  // Handle filter input changes
+  onFilterChange(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.filterText.set(target.value);
+  }
+
+  // Clear the filter
+  clearFilter(): void {
+    this.filterText.set('');
   }
 }
 

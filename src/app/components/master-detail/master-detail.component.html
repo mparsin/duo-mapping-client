@@ -23,6 +23,35 @@
       </div>
     </div>
 
+    <!-- Search Filter -->
+    <div class="filter-section">
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Search categories...</mat-label>
+        <input
+          matInput
+          type="text"
+          [value]="filterText()"
+          (input)="onFilterChange($event)"
+          placeholder="Type to filter categories">
+        <mat-icon matSuffix>search</mat-icon>
+        @if (filterText()) {
+          <button
+            mat-icon-button
+            matSuffix
+            (click)="clearFilter()"
+            aria-label="Clear search"
+            matTooltip="Clear search">
+            <mat-icon>clear</mat-icon>
+          </button>
+        }
+      </mat-form-field>
+      @if (filterText() && filteredCategoriesCount() > 0) {
+        <div class="filter-results-count">
+          {{ filteredCategoriesCount() }} {{ filteredCategoriesCount() === 1 ? 'category' : 'categories' }} found
+        </div>
+      }
+    </div>
+
     <div class="sidebar-content">
       @if (categoriesLoading()) {
         <div class="loading-container">
@@ -41,6 +70,14 @@
         <div class="empty-container">
           <mat-icon>folder_open</mat-icon>
           <p>No categories found</p>
+        </div>
+      } @else if (categoriesByTab().length === 0) {
+        <div class="empty-container">
+          <mat-icon>search_off</mat-icon>
+          <p>No categories match your search</p>
+          <button mat-raised-button color="primary" (click)="clearFilter()">
+            Clear Search
+          </button>
         </div>
       } @else {
         <mat-accordion class="categories-accordion" multi="true">
