@@ -45,7 +45,45 @@
           </button>
         }
       </mat-form-field>
-      @if (filterText() && filteredCategoriesCount() > 0) {
+
+      <!-- Epic Filter Toggle and Selection -->
+      <div class="epic-filter-section">
+        <button
+          mat-stroked-button
+          (click)="toggleEpicFilter()"
+          [class.active]="epicFilterVisible()"
+          class="epic-filter-toggle">
+          <mat-icon>filter_list</mat-icon>
+          Filter by Epic
+        </button>
+
+        @if (epicFilterVisible()) {
+          <mat-form-field appearance="outline" class="epic-filter-field">
+            <mat-label>Select Epic</mat-label>
+            <mat-select
+              [value]="selectedEpic()"
+              (selectionChange)="onEpicChange($event.value)"
+              placeholder="All Epics">
+              <mat-option [value]="null">All Epics</mat-option>
+              @for (epic of availableEpics(); track epic) {
+                <mat-option [value]="epic">{{ epic }}</mat-option>
+              }
+            </mat-select>
+            @if (selectedEpic()) {
+              <button
+                mat-icon-button
+                matSuffix
+                (click)="clearEpicFilter()"
+                aria-label="Clear epic filter"
+                matTooltip="Clear epic filter">
+                <mat-icon>clear</mat-icon>
+              </button>
+            }
+          </mat-form-field>
+        }
+      </div>
+
+      @if ((filterText() || selectedEpic()) && filteredCategoriesCount() > 0) {
         <div class="filter-results-count">
           {{ filteredCategoriesCount() }} {{ filteredCategoriesCount() === 1 ? 'category' : 'categories' }} found
         </div>
@@ -75,8 +113,8 @@
         <div class="empty-container">
           <mat-icon>search_off</mat-icon>
           <p>No categories match your search</p>
-          <button mat-raised-button color="primary" (click)="clearFilter()">
-            Clear Search
+          <button mat-raised-button color="primary" (click)="clearAllFilters()">
+            Clear All Filters
           </button>
         </div>
       } @else {

@@ -10,6 +10,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
 import { Subscription } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
@@ -33,6 +34,7 @@ import {MatTooltip} from '@angular/material/tooltip';
     MatExpansionModule,
     MatInputModule,
     MatFormFieldModule,
+    MatSelectModule,
     LinesComponent,
     MatTooltip
   ],
@@ -45,20 +47,35 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
   categoriesLoading = signal<boolean>(false);
   categoriesError = signal<string | null>(null);
   filterText = signal<string>('');
+  epicFilterVisible = signal<boolean>(false);
+  selectedEpic = signal<string | null>(null);
   private refreshSubscription?: Subscription;
 
   // Computed property to group categories by tab with filtering
   categoriesByTab = computed(() => {
     const cats = this.categories();
     const filter = this.filterText().toLowerCase().trim();
+    const selectedEpicValue = this.selectedEpic();
     
-    // Filter categories based on search text
-    const filteredCats = filter ? cats.filter(category => 
-      category.Name.toLowerCase().includes(filter) ||
-      (category.description && category.description.toLowerCase().includes(filter)) ||
-      (category.tab && category.tab.toLowerCase().includes(filter)) ||
-      (category.epic && category.epic.toLowerCase().includes(filter))
-    ) : cats;
+    // Filter categories based on search text and epic filter
+    let filteredCats = cats;
+    
+    // Apply text filter
+    if (filter) {
+      filteredCats = filteredCats.filter(category => 
+        category.Name.toLowerCase().includes(filter) ||
+        (category.description && category.description.toLowerCase().includes(filter)) ||
+        (category.tab && category.tab.toLowerCase().includes(filter)) ||
+        (category.epic && category.epic.toLowerCase().includes(filter))
+      );
+    }
+    
+    // Apply epic filter
+    if (selectedEpicValue) {
+      filteredCats = filteredCats.filter(category => 
+        category.epic === selectedEpicValue
+      );
+    }
     
     const grouped = new Map<string, Category[]>();
     
@@ -82,6 +99,20 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
       tabName,
       categories: categories // Keep original order, don't sort
     }));
+  });
+
+  // Computed property to get available epics
+  availableEpics = computed(() => {
+    const cats = this.categories();
+    const epics = new Set<string>();
+    
+    cats.forEach(category => {
+      if (category.epic) {
+        epics.add(category.epic);
+      }
+    });
+    
+    return Array.from(epics).sort();
   });
 
   // Computed property to get total filtered categories count
@@ -277,6 +308,30 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
   // Clear the filter
   clearFilter(): void {
     this.filterText.set('');
+  }
+
+  // Toggle epic filter visibility
+  toggleEpicFilter(): void {
+    this.epicFilterVisible.set(!this.epicFilterVisible());
+    if (!this.epicFilterVisible()) {
+      this.selectedEpic.set(null);
+    }
+  }
+
+  // Handle epic selection change
+  onEpicChange(epic: string | null): void {
+    this.selectedEpic.set(epic);
+  }
+
+  // Clear epic filter
+  clearEpicFilter(): void {
+    this.selectedEpic.set(null);
+  }
+
+  // Clear all filters
+  clearAllFilters(): void {
+    this.filterText.set('');
+    this.selectedEpic.set(null);
   }
 }
 

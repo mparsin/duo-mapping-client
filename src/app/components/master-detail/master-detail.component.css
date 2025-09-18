@@ -80,6 +80,72 @@
   font-style: italic;
 }
 
+/* Epic Filter Section */
+.epic-filter-section {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.epic-filter-toggle {
+  width: 100%;
+  justify-content: flex-start;
+  border-color: #e0e0e0;
+  color: #666;
+  font-size: 0.875rem;
+  padding: 8px 16px;
+  height: 40px;
+  transition: all 0.2s ease;
+}
+
+.epic-filter-toggle:hover {
+  background-color: #f5f5f5;
+  border-color: #1976d2;
+  color: #1976d2;
+}
+
+.epic-filter-toggle.active {
+  background-color: #e3f2fd;
+  border-color: #1976d2;
+  color: #1976d2;
+}
+
+.epic-filter-toggle mat-icon {
+  margin-right: 8px;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.epic-filter-field {
+  width: 100%;
+  animation: slideDown 0.2s ease-out;
+}
+
+.epic-filter-field ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+  display: none;
+}
+
+.epic-filter-field ::ng-deep .mat-mdc-form-field-infix {
+  min-height: 40px;
+}
+
+.epic-filter-field ::ng-deep .mat-mdc-text-field-wrapper {
+  background-color: white;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .sidebar-content {
   flex: 1;
   overflow-y: auto;
@@ -137,9 +203,10 @@
 .tab-header {
   padding: 12px 16px;
   background-color: #f5f5f5;
-  border-radius: 8px 8px 0 0;
   position: relative;
   overflow: hidden;
+  height: auto;
+  min-height: auto;
 }
 
 .tab-panel.fully-mapped .tab-header {
@@ -189,6 +256,7 @@
   font-size: 18px;
   width: 18px;
   height: 18px;
+  display: none;
 }
 
 .tab-name {
@@ -230,9 +298,7 @@
 }
 
 .tab-panel.fully-mapped .tab-progress-badge {
-  background-color: #e8f5e8;
   color: #4caf50;
-  border-color: #c8e6c9;
 }
 
 .tab-check-icon {
@@ -246,6 +312,41 @@
 .categories-accordion ::ng-deep .mat-expansion-indicator {
   z-index: 10 !important;
   position: relative;
+}
+
+/* Remove height limitations for expansion panel header to allow dynamic content */
+.categories-accordion ::ng-deep .mat-expansion-panel-header {
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+}
+
+.categories-accordion ::ng-deep .mat-expansion-panel-header .mat-content {
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+}
+
+/* Ensure the expansion panel title can wrap and expand as needed */
+.categories-accordion ::ng-deep .mat-expansion-panel-header .mat-expansion-panel-header-title {
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+  white-space: normal !important;
+  line-height: 1.4 !important;
+}
+
+/* Allow the expansion panel to grow with content */
+.categories-accordion ::ng-deep .mat-expansion-panel {
+  overflow: visible !important;
+}
+
+/* Ensure the expansion panel header can accommodate dynamic content */
+.categories-accordion ::ng-deep .mat-expansion-panel-header .mat-expansion-panel-header-description {
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+  white-space: normal !important;
 }
 
 .selected-indicator {
