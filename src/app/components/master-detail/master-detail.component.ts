@@ -130,18 +130,38 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
 
   // Ensures the selected category card is scrolled into view (e.g., after refresh or route navigation)
   private scrollSelectedIntoView(): void {
-    // Defer until the view updates with the selected state
-    setTimeout(() => {
+    // Use multiple attempts with increasing delays to ensure the DOM is updated
+    const attemptScroll = (attempt: number = 0) => {
       const el = document.querySelector('.categories-list .category-item.selected') as HTMLElement | null;
       if (el && typeof el.scrollIntoView === 'function') {
         try {
-          el.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
+          // First ensure the expansion panel is expanded by finding the parent panel
+          const expansionPanel = el.closest('mat-expansion-panel');
+          if (expansionPanel) {
+            const panelHeader = expansionPanel.querySelector('mat-expansion-panel-header');
+            if (panelHeader && !expansionPanel.classList.contains('mat-expanded')) {
+              // Click the header to expand the panel
+              (panelHeader as HTMLElement).click();
+              // Wait a bit for the expansion animation and try again
+              setTimeout(() => attemptScroll(attempt), 200);
+              return;
+            }
+          }
+          
+          // Scroll the selected category into view
+          el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
         } catch {
           // Fallback for older browsers/environments
           el.scrollIntoView();
         }
+      } else if (attempt < 5) {
+        // Retry up to 5 times with increasing delays
+        setTimeout(() => attemptScroll(attempt + 1), 100 * (attempt + 1));
       }
-    }, 0);
+    };
+
+    // Start the scroll attempt after a short delay to allow DOM updates
+    setTimeout(() => attemptScroll(), 50);
   }
 
   ngOnInit(): void {
@@ -183,7 +203,7 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
         // Check if there's a category ID in the route
         const categoryId = this.route.snapshot.params['id'];
         if (categoryId) {
-          // Select the category from the route
+          // Select the category from the route and ensure it's scrolled into view
           this.selectCategoryById(parseInt(categoryId, 10));
         } else if (categories.length > 0) {
           // Auto-select first category if no route parameter
@@ -219,12 +239,14 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
     const category = this.categories().find(cat => cat.id === categoryId);
     if (category) {
       this.selectedCategory.set(category);
+      // Ensure the category is scrolled into view after selection
       this.scrollSelectedIntoView();
     } else {
       // If category not found in current list, try to load it individually
       this.apiService.getCategory(categoryId).subscribe({
         next: (category) => {
           this.selectedCategory.set(category);
+          // Ensure the category is scrolled into view after loading
           this.scrollSelectedIntoView();
         },
         error: (error) => {
