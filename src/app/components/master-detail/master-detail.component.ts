@@ -309,6 +309,70 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
     return categories.every(category => category.percent_mapped === 100);
   }
 
+  // Category exclude/include methods
+  onExcludeCategory(category: Category): void {
+    this.apiService.excludeCategory(category.id).subscribe({
+      next: (updatedCategory) => {
+        // Update the category in the local state
+        const currentCategories = this.categories();
+        const index = currentCategories.findIndex(cat => cat.id === category.id);
+        if (index !== -1) {
+          const updatedCategories = [...currentCategories];
+          updatedCategories[index] = updatedCategory;
+          this.categories.set(updatedCategories);
+        }
+
+        this.snackBar.open(`Category "${category.Name}" excluded from calculations`, 'Close', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      },
+      error: (error) => {
+        console.error('Error excluding category:', error);
+        this.snackBar.open('Error excluding category', 'Close', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      }
+    });
+  }
+
+  onIncludeCategory(category: Category): void {
+    this.apiService.includeCategory(category.id).subscribe({
+      next: (updatedCategory) => {
+        // Update the category in the local state
+        const currentCategories = this.categories();
+        const index = currentCategories.findIndex(cat => cat.id === category.id);
+        if (index !== -1) {
+          const updatedCategories = [...currentCategories];
+          updatedCategories[index] = updatedCategory;
+          this.categories.set(updatedCategories);
+        }
+
+        this.snackBar.open(`Category "${category.Name}" included in calculations`, 'Close', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      },
+      error: (error) => {
+        console.error('Error including category:', error);
+        this.snackBar.open('Error including category', 'Close', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      }
+    });
+  }
+
+  // Check if category is excluded (assuming backend adds an exclude field)
+  isCategoryExcluded(category: Category): boolean {
+    return !!(category as any).exclude;
+  }
+
   // Check if a tab contains the selected category
   tabContainsSelectedCategory(categories: Category[]): boolean {
     const selected = this.selectedCategory();

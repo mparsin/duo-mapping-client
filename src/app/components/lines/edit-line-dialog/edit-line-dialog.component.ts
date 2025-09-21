@@ -10,6 +10,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { Observable, map, startWith } from 'rxjs';
 import { ApiService } from '../../../services/api.service';
@@ -39,6 +40,7 @@ export interface EditLineDialogData {
     MatSnackBarModule,
     MatIconModule,
     MatTooltipModule,
+    MatCheckboxModule,
     ReactiveFormsModule
   ],
   templateUrl: './edit-line-dialog.component.html',
@@ -82,7 +84,8 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
     this.editForm = this.fb.group({
       table_name: [''],
       column_name: [{value: '', disabled: true}],
-      comment: ['']
+      comment: [''],
+      exclude: [false]
     });
   }
 
@@ -213,6 +216,11 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
         if (this.data.line.comment) {
           this.editForm.patchValue({
             comment: this.data.line.comment
+          });
+        }
+        if (this.data.line.exclude !== undefined) {
+          this.editForm.patchValue({
+            exclude: this.data.line.exclude
           });
         }
       },
@@ -498,12 +506,13 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
     const tableIdToSend = tableId || 0;
     const columnIdToSend = columnId || 0;
 
-    // Get comment value from form
+    // Get comment and exclude values from form
     const commentValue = formValue.comment || '';
+    const excludeValue = formValue.exclude || false;
 
-    // Send PATCH request to /api/lines/{line_id}
-    this.apiService.updateLine(this.data.line.id, tableIdToSend, columnIdToSend, commentValue).subscribe({
-      next: (savedLine) => {
+    // Send PATCH request to /api/lines/{line_id} with exclude field
+    this.apiService.updateLineWithExclude(this.data.line.id, tableIdToSend, columnIdToSend, commentValue, excludeValue).subscribe({
+      next: (savedLine: Line) => {
         // Create updated line object with the new table and column names
         const updatedLine: Line = {
           ...this.data.line,
@@ -515,7 +524,8 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
             : formValue.column_name?.name || '',
           table_id: tableId,
           column_id: columnId,
-          comment: commentValue
+          comment: commentValue,
+          exclude: excludeValue
         };
 
         this.snackBar.open('Line saved successfully', 'Close', {
@@ -529,7 +539,7 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
 
         this.dialogRef.close(updatedLine);
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error saving line:', error);
         this.snackBar.open('Error saving line', 'Close', {
           duration: 3000
@@ -616,5 +626,38 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
     return !!(fieldName && fieldName.trim());
   }
 
+  onExcludeToggle(): void {
+    const excludeValue = this.editForm.get('exclude')?.value;
+    
+    // Use the dedicated exclude endpoint for immediate feedback
+    this.apiService.toggleLineExclude(this.data.line.id, excludeValue).subscribe({
+      next: (updatedLine: Line) => {
+        // Update the local line data
+        this.data.line.exclude = excludeValue;
+        
+        this.snackBar.open(
+          excludeValue ? 'Line excluded from calculations' : 'Line included in calculations', 
+          'Close', 
+          {
+            duration: 2000
+          }
+        );
+
+        // Trigger category refresh if categoryId is available
+        if (this.data.categoryId) {
+          this.categoryRefreshService.refreshCategory(this.data.categoryId);
+        }
+      },
+      error: (error: any) => {
+        console.error('Error toggling exclude status:', error);
+        this.snackBar.open('Error updating exclude status', 'Close', {
+          duration: 3000
+        });
+        
+        // Revert the checkbox state on error
+        this.editForm.patchValue({ exclude: !excludeValue });
+      }
+    });
+  }
 
 }

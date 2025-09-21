@@ -116,6 +116,19 @@
         <mat-hint align="end">{{ editForm.get('comment')?.value?.length || 0 }}/500</mat-hint>
       </mat-form-field>
 
+      <!-- Exclude Checkbox -->
+      <div class="exclude-section">
+        <mat-checkbox 
+          formControlName="exclude"
+          (change)="onExcludeToggle()"
+          class="exclude-checkbox">
+          Exclude from percentage calculations
+        </mat-checkbox>
+        <mat-hint class="exclude-hint">
+          When checked, this line will be excluded from all percentage calculations and appear grayed out in the list.
+        </mat-hint>
+      </div>
+
       <!-- Auto-match button -->
       <div class="auto-match-section">
         <button

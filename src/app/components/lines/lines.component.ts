@@ -116,45 +116,45 @@ export class LinesComponent implements OnInit, OnDestroy, OnChanges {
 
   // Computed properties for bulk update functionality
   linesWithoutTable = computed(() =>
-    this.lines().filter(line => !line.table_id && !line.table_name)
+    this.lines().filter(line => !line.exclude && !line.table_id && !line.table_name)
   );
 
   linesWithoutColumn = computed(() =>
     this.lines().filter(line =>
-      line.table_id && !line.column_id && line.field_name
+      !line.exclude && line.table_id && !line.column_id && line.field_name
     )
   );
 
   // Computed properties for cleaning operations
   linesWithTable = computed(() =>
-    this.lines().filter(line => line.table_id || line.table_name)
+    this.lines().filter(line => !line.exclude && (line.table_id || line.table_name))
   );
 
   linesWithColumn = computed(() =>
-    this.lines().filter(line => line.column_id || line.column_name)
+    this.lines().filter(line => !line.exclude && (line.column_id || line.column_name))
   );
 
   // Sub-category specific computed properties
   getSubCategoryLinesWithoutTable = (groupName: string): Line[] => {
     const groupLines = this.groupedLines()[groupName] || [];
-    return groupLines.filter(line => !line.table_id && !line.table_name);
+    return groupLines.filter(line => !line.exclude && !line.table_id && !line.table_name);
   };
 
   getSubCategoryLinesWithoutColumn = (groupName: string): Line[] => {
     const groupLines = this.groupedLines()[groupName] || [];
     return groupLines.filter(line =>
-      line.table_id && !line.column_id && line.field_name
+      !line.exclude && line.table_id && !line.column_id && line.field_name
     );
   };
 
   getSubCategoryLinesWithTable = (groupName: string): Line[] => {
     const groupLines = this.groupedLines()[groupName] || [];
-    return groupLines.filter(line => line.table_id || line.table_name);
+    return groupLines.filter(line => !line.exclude && (line.table_id || line.table_name));
   };
 
   getSubCategoryLinesWithColumn = (groupName: string): Line[] => {
     const groupLines = this.groupedLines()[groupName] || [];
-    return groupLines.filter(line => line.column_id || line.column_name);
+    return groupLines.filter(line => !line.exclude && (line.column_id || line.column_name));
   };
 
   // Computed property for grouping lines by sub-category with sorting info
@@ -522,7 +522,11 @@ export class LinesComponent implements OnInit, OnDestroy, OnChanges {
     const lines = this.lines();
     if (lines.length === 0) return true;
 
-    return lines.every(line =>
+    // Filter out excluded lines for mapping completeness check
+    const includedLines = lines.filter(line => !line.exclude);
+    if (includedLines.length === 0) return true;
+
+    return includedLines.every(line =>
       (line.table_id || line.table_name) &&
       (line.column_id || line.column_name)
     );
@@ -533,7 +537,11 @@ export class LinesComponent implements OnInit, OnDestroy, OnChanges {
     const groupLines = this.groupedLines()[groupName] || [];
     if (groupLines.length === 0) return true;
 
-    return groupLines.every(line =>
+    // Filter out excluded lines for mapping completeness check
+    const includedLines = groupLines.filter(line => !line.exclude);
+    if (includedLines.length === 0) return true;
+
+    return includedLines.every(line =>
       (line.table_id || line.table_name) &&
       (line.column_id || line.column_name)
     );
@@ -564,10 +572,17 @@ export class LinesComponent implements OnInit, OnDestroy, OnChanges {
     return !!(line.comment && line.comment.trim());
   }
 
+  // Method to determine if a line is excluded
+  isExcluded(line: Line): boolean {
+    return !!line.exclude;
+  }
+
   // Method to get CSS classes for highlighting
   getRowClasses(line: Line): string {
     const baseClasses = 'clickable-row';
-    if (this.needsHighlighting(line)) {
+    if (this.isExcluded(line)) {
+      return `${baseClasses} excluded-line`;
+    } else if (this.needsHighlighting(line)) {
       // console.log(`Line ${line.id} needs table highlighting:`, line);
       return `${baseClasses} highlight-missing-table test-highlight`;
     } else if (this.needsColumnHighlighting(line)) {
@@ -1627,7 +1642,7 @@ export class LinesComponent implements OnInit, OnDestroy, OnChanges {
     return undefined;
   }
 
-  private getSubCategoryIdFromGroupName(groupName: string): number | null {
+  getSubCategoryIdFromGroupName(groupName: string): number | null {
     const grouped = this.groupedLinesWithSorting();
     const groupData = grouped.groups[groupName];
     if (groupData && groupData.length > 0) {
@@ -1641,5 +1656,139 @@ export class LinesComponent implements OnInit, OnDestroy, OnChanges {
     
     const subCategory = this.subCategories().find(sc => sc.id === subCategoryId);
     return subCategory?.seq_no || 999;
+  }
+
+  // Sub-category exclude/include methods
+  onExcludeSubCategory(subCategoryId: number, groupName: string): void {
+    if (!this.categoryId) return;
+
+    this.apiService.excludeSubCategory(this.categoryId, subCategoryId).subscribe({
+      next: (updatedSubCategory) => {
+        // Update the sub-category in the local state
+        const currentSubCategories = this.subCategories();
+        const index = currentSubCategories.findIndex(sc => sc.id === subCategoryId);
+        if (index !== -1) {
+          const updatedSubCategories = [...currentSubCategories];
+          updatedSubCategories[index] = updatedSubCategory;
+          this.subCategories.set(updatedSubCategories);
+        }
+
+        // Refresh lines to show updated exclude status
+        this.updateLinesData();
+
+        this.snackBar.open(`Sub-category "${groupName}" excluded from calculations`, 'Close', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      },
+      error: (error) => {
+        console.error('Error excluding sub-category:', error);
+        this.snackBar.open('Error excluding sub-category', 'Close', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      }
+    });
+  }
+
+  onIncludeSubCategory(subCategoryId: number, groupName: string): void {
+    if (!this.categoryId) return;
+
+    this.apiService.includeSubCategory(this.categoryId, subCategoryId).subscribe({
+      next: (updatedSubCategory) => {
+        // Update the sub-category in the local state
+        const currentSubCategories = this.subCategories();
+        const index = currentSubCategories.findIndex(sc => sc.id === subCategoryId);
+        if (index !== -1) {
+          const updatedSubCategories = [...currentSubCategories];
+          updatedSubCategories[index] = updatedSubCategory;
+          this.subCategories.set(updatedSubCategories);
+        }
+
+        // Refresh lines to show updated exclude status
+        this.updateLinesData();
+
+        this.snackBar.open(`Sub-category "${groupName}" included in calculations`, 'Close', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      },
+      error: (error) => {
+        console.error('Error including sub-category:', error);
+        this.snackBar.open('Error including sub-category', 'Close', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      }
+    });
+  }
+
+  // Check if sub-category is excluded (assuming backend adds an exclude field)
+  isSubCategoryExcluded(subCategoryId: number): boolean {
+    const subCategory = this.subCategories().find(sc => sc.id === subCategoryId);
+    return !!(subCategory as any)?.exclude;
+  }
+
+  // Category exclude/include methods
+  onExcludeCategory(): void {
+    if (!this.categoryId) return;
+
+    this.apiService.excludeCategory(this.categoryId).subscribe({
+      next: (updatedCategory) => {
+        this.snackBar.open(`Category "${this.categoryName}" excluded from calculations`, 'Close', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+        
+        // Trigger category refresh to update the master-detail view
+        this.triggerCategoryRefresh();
+      },
+      error: (error) => {
+        console.error('Error excluding category:', error);
+        this.snackBar.open('Error excluding category', 'Close', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      }
+    });
+  }
+
+  onIncludeCategory(): void {
+    if (!this.categoryId) return;
+
+    this.apiService.includeCategory(this.categoryId).subscribe({
+      next: (updatedCategory) => {
+        this.snackBar.open(`Category "${this.categoryName}" included in calculations`, 'Close', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+        
+        // Trigger category refresh to update the master-detail view
+        this.triggerCategoryRefresh();
+      },
+      error: (error) => {
+        console.error('Error including category:', error);
+        this.snackBar.open('Error including category', 'Close', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      }
+    });
+  }
+
+  // Check if category is excluded (assuming backend adds an exclude field)
+  isCategoryExcluded(): boolean {
+    // For now, we'll need to check if all lines in the category are excluded
+    // This is a simplified check - in a real implementation, the category itself would have an exclude field
+    const lines = this.lines();
+    return lines.length > 0 && lines.every(line => line.exclude === true);
   }
 }

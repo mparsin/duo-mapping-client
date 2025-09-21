@@ -345,6 +345,52 @@
                 </p>
               }
             }
+
+            <!-- Category Exclude/Include Commands -->
+            <mat-divider class="command-divider"></mat-divider>
+            <div class="bulk-update-controls">
+              <div class="command-info">
+                <mat-icon>category</mat-icon>
+                <span class="command-title">Category Actions</span>
+                @if (isCategoryExcluded()) {
+                  <span class="excluded-label">EXCLUDED</span>
+                }
+              </div>
+
+              <div class="category-actions">
+                @if (isCategoryExcluded()) {
+                  <button
+                    mat-stroked-button
+                    color="primary"
+                    (click)="onIncludeCategory()"
+                    class="action-button include-button"
+                    matTooltip="Include category in calculations">
+                    <mat-icon>add_circle</mat-icon>
+                    Include Category
+                  </button>
+                } @else {
+                  <button
+                    mat-stroked-button
+                    color="warn"
+                    (click)="onExcludeCategory()"
+                    class="action-button exclude-button"
+                    matTooltip="Exclude category from calculations">
+                    <mat-icon>remove_circle</mat-icon>
+                    Exclude Category
+                  </button>
+                }
+              </div>
+            </div>
+
+            @if (isCategoryExcluded()) {
+              <p class="bulk-update-description">
+                This category is currently excluded from all percentage calculations. Click "Include Category" to include it in calculations.
+              </p>
+            } @else {
+              <p class="bulk-update-description">
+                Exclude this entire category from percentage calculations. This will affect all lines in the category.
+              </p>
+            }
             </mat-card-content>
           }
         </mat-card>
@@ -358,7 +404,7 @@
           <!-- Grouped by Sub-category -->
           @for (group of getGroupKeys(); track group) {
             <div class="sub-category-group">
-              <div class="sub-category-header">
+              <div class="sub-category-header" [class.excluded]="getSubCategoryIdFromGroupName(group) && isSubCategoryExcluded(getSubCategoryIdFromGroupName(group)!)">
                 <div class="left-section">
                   <mat-icon>folder</mat-icon>
                   <h3>{{ group }}</h3>
@@ -370,9 +416,40 @@
                     [title]="getSubCategoryAllLinesHaveCompleteMappings(group) ? 'All lines in ' + group + ' have complete table and column mappings' : 'Some lines in ' + group + ' are missing table or column mappings'">
                     {{ getSubCategoryAllLinesHaveCompleteMappings(group) ? 'check_circle' : 'warning' }}
                   </mat-icon>
+                  @if (getSubCategoryIdFromGroupName(group) && isSubCategoryExcluded(getSubCategoryIdFromGroupName(group)!)) {
+                    <span class="excluded-label">EXCLUDED</span>
+                  }
                 </div>
                 <div class="right-section">
                   <span class="line-count">{{ groupedLines()[group].length }} line(s)</span>
+                  
+                  <!-- Exclude/Include Actions -->
+                  @if (getSubCategoryIdFromGroupName(group)) {
+                    <div class="sub-category-actions">
+                      @if (isSubCategoryExcluded(getSubCategoryIdFromGroupName(group)!)) {
+                        <button
+                          mat-stroked-button
+                          color="primary"
+                          (click)="onIncludeSubCategory(getSubCategoryIdFromGroupName(group)!, group)"
+                          class="action-button include-button"
+                          matTooltip="Include sub-category in calculations">
+                          <mat-icon>add_circle</mat-icon>
+                          Include
+                        </button>
+                      } @else {
+                        <button
+                          mat-stroked-button
+                          color="warn"
+                          (click)="onExcludeSubCategory(getSubCategoryIdFromGroupName(group)!, group)"
+                          class="action-button exclude-button"
+                          matTooltip="Exclude sub-category from calculations">
+                          <mat-icon>remove_circle</mat-icon>
+                          Exclude
+                        </button>
+                      }
+                    </div>
+                  }
+                  
                   <!-- Add Comment button in header -->
                   @if (!getSubCategoryComment(group) && !getSubCategoryEditingComment(group)) {
                     <button

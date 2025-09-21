@@ -224,6 +224,66 @@ tr[data-line-id].highlight-missing-column {
   border: 2px solid #00ff00 !important;
 }
 
+/* Excluded line styles */
+.lines-table tr.excluded-line {
+  background-color: #f5f5f5 !important;
+  color: #9e9e9e !important;
+  opacity: 0.6 !important;
+  text-decoration: line-through;
+}
+
+.lines-table tr.excluded-line:hover {
+  background-color: #eeeeee !important;
+}
+
+.lines-table tr.excluded-line td {
+  color: #9e9e9e !important;
+}
+
+/* Additional specificity for sub-category groups */
+.sub-category-group .lines-table tr.excluded-line {
+  background-color: #f5f5f5 !important;
+  color: #9e9e9e !important;
+  opacity: 0.6 !important;
+  text-decoration: line-through;
+}
+
+.sub-category-group .lines-table tr.excluded-line:hover {
+  background-color: #eeeeee !important;
+}
+
+.sub-category-group .lines-table tr.excluded-line td {
+  color: #9e9e9e !important;
+}
+
+/* Force excluded styling with maximum specificity */
+.mat-mdc-table .mat-mdc-row.excluded-line {
+  background-color: #f5f5f5 !important;
+  color: #9e9e9e !important;
+  opacity: 0.6 !important;
+  text-decoration: line-through;
+}
+
+.mat-mdc-table .mat-mdc-row.excluded-line:hover {
+  background-color: #eeeeee !important;
+}
+
+/* Even more specific for Angular Material tables */
+table.mat-mdc-table tr.mat-mdc-row.excluded-line {
+  background-color: #f5f5f5 !important;
+  color: #9e9e9e !important;
+  opacity: 0.6 !important;
+  text-decoration: line-through;
+}
+
+/* Ultra-specific targeting for debugging */
+tr[data-line-id].excluded-line {
+  background-color: #f5f5f5 !important;
+  color: #9e9e9e !important;
+  opacity: 0.6 !important;
+  text-decoration: line-through;
+}
+
 @keyframes pulse-warning {
   0% {
     box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4);
@@ -1099,6 +1159,112 @@ tr[data-line-id].highlight-missing-column {
   font-size: 18px;
   width: 18px;
   height: 18px;
+}
+
+/* Excluded sub-category styling */
+.sub-category-header.excluded {
+  background-color: #fff3e0 !important;
+  border: 2px solid #ff9800 !important;
+  opacity: 0.8;
+}
+
+.sub-category-header.excluded h3 {
+  color: #e65100 !important;
+}
+
+.sub-category-header .excluded-label {
+  background-color: #ff9800;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-left: 8px;
+}
+
+/* Sub-category action buttons */
+.sub-category-actions {
+  display: flex;
+  gap: 8px;
+  margin-right: 8px;
+}
+
+.sub-category-actions .action-button {
+  font-size: 0.75rem;
+  height: 28px;
+  min-width: 70px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sub-category-actions .action-button mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.sub-category-actions .exclude-button {
+  color: #d32f2f;
+  border-color: #d32f2f;
+}
+
+.sub-category-actions .exclude-button:hover {
+  background-color: #ffebee;
+  border-color: #b71c1c;
+}
+
+.sub-category-actions .include-button {
+  color: #1976d2;
+  border-color: #1976d2;
+}
+
+.sub-category-actions .include-button:hover {
+  background-color: #e3f2fd;
+  border-color: #1565c0;
+}
+
+/* Category action buttons in bulk update panel */
+.category-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.category-actions .action-button {
+  font-size: 0.8rem;
+  height: 32px;
+  min-width: 120px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.category-actions .action-button mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.category-actions .exclude-button {
+  color: #d32f2f;
+  border-color: #d32f2f;
+}
+
+.category-actions .exclude-button:hover {
+  background-color: #ffebee;
+  border-color: #b71c1c;
+}
+
+.category-actions .include-button {
+  color: #1976d2;
+  border-color: #1976d2;
+}
+
+.category-actions .include-button:hover {
+  background-color: #e3f2fd;
+  border-color: #1565c0;
 }
 
 

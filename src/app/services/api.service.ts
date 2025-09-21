@@ -59,6 +59,21 @@ export class ApiService {
     return this.http.patch<Line>(`${this.baseUrl}/lines/${lineId}`, body);
   }
 
+  // Update a line with exclude field
+  updateLineWithExclude(lineId: number, tableId: number, columnId: number, comment?: string, exclude?: boolean): Observable<Line> {
+    const body: any = {
+      table_id: tableId,
+      column_id: columnId
+    };
+    if (comment !== undefined) {
+      body.comment = comment;
+    }
+    if (exclude !== undefined) {
+      body.exclude = exclude;
+    }
+    return this.http.patch<Line>(`${this.baseUrl}/lines/${lineId}`, body);
+  }
+
   // Update only table for a line (for bulk updates)
   updateLineTable(lineId: number, tableId: number): Observable<Line> {
     const body = {
@@ -126,5 +141,31 @@ export class ApiService {
     return this.http.get(`${this.baseUrl}/download-schema`, {
       responseType: 'blob'
     });
+  }
+
+  // Toggle exclude status for a line
+  toggleLineExclude(lineId: number, exclude: boolean): Observable<Line> {
+    const body = {
+      exclude: exclude
+    };
+    return this.http.patch<Line>(`${this.baseUrl}/lines/${lineId}/exclude`, body);
+  }
+
+  // Category-level bulk operations
+  excludeCategory(categoryId: number): Observable<Category> {
+    return this.http.patch<Category>(`${this.baseUrl}/categories/${categoryId}/exclude`, {});
+  }
+
+  includeCategory(categoryId: number): Observable<Category> {
+    return this.http.patch<Category>(`${this.baseUrl}/categories/${categoryId}/include`, {});
+  }
+
+  // Sub-category-level bulk operations
+  excludeSubCategory(categoryId: number, subCategoryId: number): Observable<SubCategory> {
+    return this.http.patch<SubCategory>(`${this.baseUrl}/categories/${categoryId}/sub-categories/${subCategoryId}/exclude`, {});
+  }
+
+  includeSubCategory(categoryId: number, subCategoryId: number): Observable<SubCategory> {
+    return this.http.patch<SubCategory>(`${this.baseUrl}/categories/${categoryId}/sub-categories/${subCategoryId}/include`, {});
   }
 }

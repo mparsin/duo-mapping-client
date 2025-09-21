@@ -163,6 +163,7 @@
                     class="category-item"
                     [class.selected]="selectedCategory()?.id === category.id"
                     [class.fully-mapped]="category.percent_mapped === 100"
+                    [class.excluded]="isCategoryExcluded(category)"
                     (click)="selectCategory(category)">
 
                     <!-- Progress bar background -->
@@ -177,6 +178,9 @@
                           <h3>{{ category.Name }}</h3>
                           @if (category.epic) {
                             <span class="epic-label">{{ category.epic }}</span>
+                          }
+                          @if (isCategoryExcluded(category)) {
+                            <span class="excluded-label">EXCLUDED</span>
                           }
                         </div>
                         <div class="category-badges">

@@ -502,6 +502,29 @@
   z-index: 2;
 }
 
+/* Excluded category styling */
+.category-item.excluded {
+  opacity: 0.6;
+  background-color: #f5f5f5 !important;
+  border: 2px solid #ff9800 !important;
+}
+
+.category-item.excluded .progress-background {
+  background: linear-gradient(135deg, #ffecb3 0%, #ffcc02 100%);
+}
+
+.excluded-label {
+  background-color: #ff9800;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-left: 8px;
+}
+
+
 /* Lines Content */
 .lines-content {
   flex: 1;
