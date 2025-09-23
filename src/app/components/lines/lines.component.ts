@@ -1662,6 +1662,7 @@ export class LinesComponent implements OnInit, OnDestroy, OnChanges {
   onExcludeSubCategory(subCategoryId: number, groupName: string): void {
     if (!this.categoryId) return;
 
+    // First exclude the sub-category
     this.apiService.excludeSubCategory(this.categoryId, subCategoryId).subscribe({
       next: (updatedSubCategory) => {
         // Update the sub-category in the local state
@@ -1673,8 +1674,14 @@ export class LinesComponent implements OnInit, OnDestroy, OnChanges {
           this.subCategories.set(updatedSubCategories);
         }
 
-        // Refresh lines to show updated exclude status
-        this.updateLinesData();
+        // Also exclude all individual lines in the sub-category
+        const groupLines = this.groupedLines()[groupName] || [];
+        if (groupLines.length > 0) {
+          this.excludeAllLinesInSubCategory(groupLines, groupName);
+        } else {
+          // If no lines, just refresh the data
+          this.updateLinesData();
+        }
 
         this.snackBar.open(`Sub-category "${groupName}" excluded from calculations`, 'Close', {
           duration: 3000,
@@ -1733,6 +1740,123 @@ export class LinesComponent implements OnInit, OnDestroy, OnChanges {
     return !!(subCategory as any)?.exclude;
   }
 
+  // Check if all lines in a sub-category are excluded
+  areAllLinesInSubCategoryExcluded(groupName: string): boolean {
+    const groupLines = this.groupedLines()[groupName] || [];
+    if (groupLines.length === 0) return false;
+    
+    // Check if all lines in the group have exclude: true (handle both boolean and string types)
+    return groupLines.every(line => {
+      const excludeValue = line.exclude;
+      return excludeValue === true || (excludeValue as any) === 'true' || (excludeValue as any) === 1;
+    });
+  }
+
+  // Exclude all lines in a sub-category (set exclude: true)
+  private excludeAllLinesInSubCategory(groupLines: Line[], groupName: string): void {
+    // Create update requests for all lines in the sub-category
+    const updateRequests = groupLines.map(line =>
+      this.apiService.toggleLineExclude(line.id, true).pipe(
+        catchError(error => {
+          console.error(`Error excluding line ${line.id}:`, error);
+          return of({ error: true, lineId: line.id });
+        })
+      )
+    );
+
+    // Execute all requests in parallel
+    forkJoin(updateRequests).subscribe({
+      next: (results) => {
+        const successful = results.filter(result => !result.error);
+        const failed = results.filter(result => result.error);
+
+        if (successful.length > 0) {
+          this.snackBar.open(
+            `Successfully excluded ${successful.length} line(s) in ${groupName}${failed.length > 0 ? `, ${failed.length} failed` : ''}`,
+            'Close',
+            {
+              duration: 5000,
+              horizontalPosition: 'right',
+              verticalPosition: 'top'
+            }
+          );
+        } else {
+          this.snackBar.open(`Failed to exclude any lines in ${groupName}`, 'Close', {
+            duration: 3000,
+            horizontalPosition: 'right',
+            verticalPosition: 'top'
+          });
+        }
+
+        // Refresh lines to show updated exclude status
+        this.updateLinesData();
+      },
+      error: (error) => {
+        console.error('Error excluding lines in sub-category:', error);
+        this.snackBar.open('Error excluding lines in sub-category', 'Close', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      }
+    });
+  }
+
+  // Include all lines in a sub-category (set exclude: false)
+  onIncludeAllLinesInSubCategory(subCategoryId: number, groupName: string): void {
+    if (!this.categoryId) return;
+
+    const groupLines = this.groupedLines()[groupName] || [];
+    if (groupLines.length === 0) return;
+
+    // Create update requests for all lines in the sub-category
+    const updateRequests = groupLines.map(line =>
+      this.apiService.toggleLineExclude(line.id, false).pipe(
+        catchError(error => {
+          console.error(`Error including line ${line.id}:`, error);
+          return of({ error: true, lineId: line.id });
+        })
+      )
+    );
+
+    // Execute all requests in parallel
+    forkJoin(updateRequests).subscribe({
+      next: (results) => {
+        const successful = results.filter(result => !result.error);
+        const failed = results.filter(result => result.error);
+
+        if (successful.length > 0) {
+          this.snackBar.open(
+            `Successfully included ${successful.length} line(s) in ${groupName}${failed.length > 0 ? `, ${failed.length} failed` : ''}`,
+            'Close',
+            {
+              duration: 5000,
+              horizontalPosition: 'right',
+              verticalPosition: 'top'
+            }
+          );
+        } else {
+          this.snackBar.open(`Failed to include any lines in ${groupName}`, 'Close', {
+            duration: 3000,
+            horizontalPosition: 'right',
+            verticalPosition: 'top'
+          });
+        }
+
+        // Refresh lines to show updated exclude status
+        this.updateLinesData();
+      },
+      error: (error) => {
+        console.error('Error including lines in sub-category:', error);
+        this.snackBar.open('Error including lines in sub-category', 'Close', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      }
+    });
+  }
+
   // Category exclude/include methods
   onExcludeCategory(): void {
     if (!this.categoryId) return;
@@ -1744,6 +1868,9 @@ export class LinesComponent implements OnInit, OnDestroy, OnChanges {
           horizontalPosition: 'right',
           verticalPosition: 'top'
         });
+        
+        // Refresh lines to show updated exclude status
+        this.updateLinesData();
         
         // Trigger category refresh to update the master-detail view
         this.triggerCategoryRefresh();
@@ -1769,6 +1896,9 @@ export class LinesComponent implements OnInit, OnDestroy, OnChanges {
           horizontalPosition: 'right',
           verticalPosition: 'top'
         });
+        
+        // Refresh lines to show updated exclude status
+        this.updateLinesData();
         
         // Trigger category refresh to update the master-detail view
         this.triggerCategoryRefresh();

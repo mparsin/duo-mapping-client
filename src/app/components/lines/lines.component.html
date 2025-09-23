@@ -426,7 +426,17 @@
                   <!-- Exclude/Include Actions -->
                   @if (getSubCategoryIdFromGroupName(group)) {
                     <div class="sub-category-actions">
-                      @if (isSubCategoryExcluded(getSubCategoryIdFromGroupName(group)!)) {
+                      @if (areAllLinesInSubCategoryExcluded(group)) {
+                        <button
+                          mat-stroked-button
+                          color="primary"
+                          (click)="onIncludeAllLinesInSubCategory(getSubCategoryIdFromGroupName(group)!, group)"
+                          class="action-button include-button"
+                          matTooltip="Include all lines in this sub-category">
+                          <mat-icon>add_circle</mat-icon>
+                          Include All Lines
+                        </button>
+                      } @else if (isSubCategoryExcluded(getSubCategoryIdFromGroupName(group)!) && !areAllLinesInSubCategoryExcluded(group)) {
                         <button
                           mat-stroked-button
                           color="primary"
@@ -434,7 +444,7 @@
                           class="action-button include-button"
                           matTooltip="Include sub-category in calculations">
                           <mat-icon>add_circle</mat-icon>
-                          Include
+                          Include Sub-category
                         </button>
                       } @else {
                         <button
