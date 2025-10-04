@@ -839,6 +839,18 @@
                   <td mat-cell *matCellDef="let line">{{ line.field_name || '-' }}</td>
                 </ng-container>
 
+                <!-- Key Field Column -->
+                <ng-container matColumnDef="key_field">
+                  <th mat-header-cell *matHeaderCellDef mat-tooltip="Key fields used for joining tables">🔑</th>
+                  <td mat-cell *matCellDef="let line">
+                    <mat-icon *ngIf="line.iskeyfield" 
+                              color="primary" 
+                              mat-tooltip="Key field - indicates this field is part of the key used to join tables"
+                              aria-label="Key field"
+                              role="img">vpn_key</mat-icon>
+                  </td>
+                </ng-container>
+
                 <!-- Table Name Column -->
                 <ng-container matColumnDef="table_name">
                   <th mat-header-cell *matHeaderCellDef>Table Name</th>
@@ -893,6 +905,20 @@
             <ng-container matColumnDef="field_name">
               <th mat-header-cell *matHeaderCellDef>Field Name</th>
               <td mat-cell *matCellDef="let line">{{ line.field_name || '-' }}</td>
+            </ng-container>
+
+            <!-- Key Field Column -->
+            <ng-container matColumnDef="key_field">
+              <th mat-header-cell *matHeaderCellDef mat-tooltip="Key fields used for joining tables">🔑</th>
+              <td mat-cell *matCellDef="let line">
+                <mat-icon *ngIf="line.iskeyfield" 
+                          color="primary" 
+                          mat-tooltip="Key field - indicates this field is part of the key used to join tables"
+                          aria-label="Key field"
+                          role="img">vpn_key</mat-icon>
+
+
+              </td>
             </ng-container>
 
             <!-- Table Name Column -->

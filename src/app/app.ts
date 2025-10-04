@@ -209,6 +209,21 @@ export class App implements OnInit, OnDestroy {
     this.showSearchResults.set(false);
   }
 
+  onSearchResultItemClick(result: SearchResult): void {
+    // If the result has mapped categories, navigate to the first one
+    if (result.mapped_categories && result.mapped_categories.length > 0) {
+      this.navigateToCategory(result.mapped_categories[0].id);
+    } else {
+      // If no mapped categories, show a message
+      this.snackBar.open(`Column "${result.column_name}" is not mapped to any category yet`, 'Close', {
+        duration: 3000,
+        horizontalPosition: 'center',
+        verticalPosition: 'top'
+      });
+      this.showSearchResults.set(false);
+    }
+  }
+
   getSearchResultDisplayText(result: SearchResult): string {
     return `${result.column_name} (${result.table_name})`;
   }

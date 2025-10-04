@@ -21,7 +21,7 @@
 
       <!-- Search Results Dropdown -->
       <div class="search-results" *ngIf="showSearchResults() && searchResults().length > 0" (mousedown)="onSearchResultClick($event)">
-        <div class="search-result-item" *ngFor="let result of searchResults()">
+        <div class="search-result-item" *ngFor="let result of searchResults()" (click)="onSearchResultItemClick(result)">
           <div class="result-main">
             <div class="column-name">{{ result.column_name }}</div>
             <div class="table-name">{{ result.table_name }}</div>

@@ -18,6 +18,7 @@ export interface Line {
   table_id?: number;
   column_id?: number;
   exclude?: boolean;
+  iskeyfield?: boolean;
   [key: string]: any; // Allow for additional properties
 }
 

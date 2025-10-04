@@ -112,7 +112,7 @@ export class LinesComponent implements OnInit, OnDestroy, OnChanges {
   tableDropdownOpen = false;
   private userTypingTable = false;
 
-  displayedColumns: string[] = ['id', 'name', 'field_name', 'table_name', 'column_name', 'default', 'reason', 'comment'];
+  displayedColumns: string[] = ['id', 'name', 'field_name', 'key_field', 'table_name', 'column_name', 'default', 'reason', 'comment'];
 
   // Computed properties for bulk update functionality
   linesWithoutTable = computed(() =>
