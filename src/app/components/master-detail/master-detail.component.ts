@@ -427,12 +427,32 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
 
   // Open config dialog
   openConfigDialog(category: Category): void {
-    this.dialog.open(ConfigDialogComponent, {
+    const dialogRef = this.dialog.open(ConfigDialogComponent, {
       width: '800px',
       maxWidth: '90vw',
       data: { 
+        categoryId: category.id,
         categoryName: category.Name,
         config: category.config
+      }
+    });
+
+    // Handle dialog result - update category if config was modified
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        // Update the category in the local state
+        const currentCategories = this.categories();
+        const index = currentCategories.findIndex(cat => cat.id === result.id);
+        if (index !== -1) {
+          const updatedCategories = [...currentCategories];
+          updatedCategories[index] = result;
+          this.categories.set(updatedCategories);
+
+          // Update selected category if it's the one being modified
+          if (this.selectedCategory()?.id === result.id) {
+            this.selectedCategory.set(result);
+          }
+        }
       }
     });
   }

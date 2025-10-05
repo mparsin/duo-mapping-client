@@ -14,54 +14,131 @@
   margin-bottom: 16px;
 }
 
-.json-display {
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px;
+}
+
+.loading-container p {
+  margin-top: 16px;
+  color: #666;
+}
+
+.error-container {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  background-color: #ffebee;
+  border: 1px solid #f44336;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.error-container mat-icon {
+  margin-right: 8px;
+}
+
+.error-container p {
+  margin: 0;
+  color: #d32f2f;
+}
+
+.config-textarea {
+  width: 100%;
+}
+
+.config-textarea textarea {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 14px;
+  line-height: 1.4;
+  min-height: 400px;
+}
+
+.config-textarea textarea.error {
+  border-color: #f44336;
+}
+
+.config-display {
   background: #f5f5f5;
   border: 1px solid #ddd;
   border-radius: 4px;
   padding: 16px;
   margin: 0;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 14px;
-  line-height: 1.4;
   overflow: auto;
-  white-space: pre;
-  word-wrap: normal;
   max-height: 500px;
   min-height: 200px;
   width: 100%;
   box-sizing: border-box;
 }
 
+.json-display {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 14px;
+  line-height: 1.4;
+  margin: 0;
+  white-space: pre;
+  word-wrap: normal;
+}
+
 /* Custom scrollbar styling for better visibility */
+.config-display::-webkit-scrollbar,
 .json-display::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
+.config-display::-webkit-scrollbar-track,
 .json-display::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 4px;
 }
 
+.config-display::-webkit-scrollbar-thumb,
 .json-display::-webkit-scrollbar-thumb {
   background: #c1c1c1;
   border-radius: 4px;
 }
 
+.config-display::-webkit-scrollbar-thumb:hover,
 .json-display::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
 
-/* Prism.js syntax highlighting is now imported globally */
-
 .no-config {
   text-align: center;
+  padding: 40px 20px;
   color: #666;
-  font-style: italic;
-  padding: 20px;
+}
+
+.no-config mat-icon {
+  font-size: 48px;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 16px;
+  color: #ccc;
+}
+
+.no-config p {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+}
+
+.no-config .help-text {
+  font-size: 14px;
+  color: #999;
 }
 
 mat-dialog-actions {
   margin-top: 16px;
   padding: 0;
+}
+
+mat-dialog-actions button {
+  margin-left: 8px;
+}
+
+mat-dialog-actions button:first-child {
+  margin-left: 0;
 }

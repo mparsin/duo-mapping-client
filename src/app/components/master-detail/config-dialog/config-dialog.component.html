@@ -5,18 +5,82 @@
     </div>
     
     <div class="config-content">
-      @if (data.config) {
-        <pre class="json-display" [innerHTML]="highlightedConfig"></pre>
+      @if (isLoading()) {
+        <div class="loading-container">
+          <mat-spinner diameter="40"></mat-spinner>
+          <p>Saving configuration...</p>
+        </div>
+      } @else if (hasError()) {
+        <div class="error-container">
+          <mat-icon color="warn">error</mat-icon>
+          <p>{{ errorMessage() }}</p>
+        </div>
+      }
+      
+      @if (isEditing()) {
+        <mat-form-field appearance="outline" class="config-textarea">
+          <mat-label>Configuration JSON</mat-label>
+          <textarea
+            matInput
+            [(ngModel)]="configText"
+            rows="20"
+            placeholder="Enter JSON configuration..."
+            [class.error]="!isValidJson">
+          </textarea>
+          @if (!isValidJson) {
+            <mat-error>Invalid JSON format</mat-error>
+          }
+        </mat-form-field>
       } @else {
-        <p class="no-config">No configuration available for this category.</p>
+        @if (hasConfig) {
+          <div class="config-display">
+            <pre class="json-display" [innerHTML]="highlightedConfig"></pre>
+          </div>
+        } @else {
+          <div class="no-config">
+            <mat-icon>settings</mat-icon>
+            <p>No configuration available for this category.</p>
+            <p class="help-text">Click "Add Configuration" to create one.</p>
+          </div>
+        }
       }
     </div>
   </mat-dialog-content>
   
   <mat-dialog-actions align="end">
-    <button mat-button (click)="onClose()">
-      <mat-icon>close</mat-icon>
-      Close
-    </button>
+    @if (isEditing()) {
+      <button mat-button (click)="cancelEditing()" [disabled]="isLoading()">
+        <mat-icon>cancel</mat-icon>
+        Cancel
+      </button>
+      <button 
+        mat-raised-button 
+        color="primary" 
+        (click)="saveConfig()" 
+        [disabled]="!isValidJson || !hasChanges || isLoading()">
+        <mat-icon>save</mat-icon>
+        Save
+      </button>
+    } @else {
+      @if (hasConfig) {
+        <button mat-button (click)="startEditing()">
+          <mat-icon>edit</mat-icon>
+          Edit
+        </button>
+        <button mat-button color="warn" (click)="deleteConfig()">
+          <mat-icon>delete</mat-icon>
+          Delete
+        </button>
+      } @else {
+        <button mat-raised-button color="primary" (click)="startEditing()">
+          <mat-icon>add</mat-icon>
+          Add Configuration
+        </button>
+      }
+      <button mat-button (click)="onClose()">
+        <mat-icon>close</mat-icon>
+        Close
+      </button>
+    }
   </mat-dialog-actions>
 </div>

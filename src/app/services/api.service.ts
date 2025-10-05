@@ -169,4 +169,17 @@ export class ApiService {
   includeSubCategory(categoryId: number, subCategoryId: number): Observable<SubCategory> {
     return this.http.patch<SubCategory>(`${this.baseUrl}/categories/${categoryId}/sub-categories/${subCategoryId}/include`, {});
   }
+
+  // Category config operations
+  updateCategoryConfig(categoryId: number, config: any): Observable<Category> {
+    return this.http.patch<Category>(`${this.baseUrl}/categories/${categoryId}/config`, { config });
+  }
+
+  createCategoryConfig(categoryId: number, config: any): Observable<Category> {
+    return this.http.post<Category>(`${this.baseUrl}/categories/${categoryId}/config`, { config });
+  }
+
+  deleteCategoryConfig(categoryId: number): Observable<Category> {
+    return this.http.delete<Category>(`${this.baseUrl}/categories/${categoryId}/config`);
+  }
 }

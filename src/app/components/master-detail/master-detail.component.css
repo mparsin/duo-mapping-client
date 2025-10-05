@@ -464,11 +464,30 @@
   min-width: 28px;
   padding: 1px;
   color: #666;
+  transition: all 0.2s ease;
 }
 
 .config-button:hover {
   background-color: rgba(0, 0, 0, 0.04);
   color: #333;
+}
+
+.config-button.has-config {
+  color: #1976d2;
+}
+
+.config-button.has-config:hover {
+  background-color: rgba(25, 118, 210, 0.1);
+  color: #1565c0;
+}
+
+.config-button:not(.has-config) {
+  color: #4caf50;
+}
+
+.config-button:not(.has-config):hover {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #388e3c;
 }
 
 .config-button mat-icon {

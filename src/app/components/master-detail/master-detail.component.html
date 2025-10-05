@@ -184,16 +184,15 @@
                           }
                         </div>
                         <div class="category-badges">
-                          @if (category.config) {
-                            <button
-                              mat-icon-button
-                              (click)="openConfigDialog(category); $event.stopPropagation()"
-                              aria-label="View configuration"
-                              matTooltip="View configuration"
-                              class="config-button">
-                              <mat-icon>settings</mat-icon>
-                            </button>
-                          }
+                          <button
+                            mat-icon-button
+                            (click)="openConfigDialog(category); $event.stopPropagation()"
+                            [aria-label]="category.config ? 'View configuration' : 'Add configuration'"
+                            [matTooltip]="category.config ? 'View configuration' : 'Add configuration'"
+                            class="config-button"
+                            [class.has-config]="category.config">
+                            <mat-icon>{{ category.config ? 'settings' : 'add' }}</mat-icon>
+                          </button>
                           @if (category.percent_mapped !== undefined) {
                             <div class="percentage-badge">
                               {{ roundPercentage(category.percent_mapped) }}%
