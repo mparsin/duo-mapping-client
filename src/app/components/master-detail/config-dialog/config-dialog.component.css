@@ -2,6 +2,7 @@
   min-width: 600px;
   max-width: 90vw;
   width: 800px;
+  min-height: 600px;
 }
 
 .dialog-header h2 {
@@ -12,6 +13,7 @@
 
 .config-content {
   margin-bottom: 16px;
+  min-height: 450px;
 }
 
 .loading-container {
@@ -45,71 +47,94 @@
   color: #d32f2f;
 }
 
-.config-textarea {
+.config-editor-container {
   width: 100%;
 }
 
-.config-textarea textarea {
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+.editor-label {
+  display: block;
+  margin-bottom: 8px;
   font-size: 14px;
-  line-height: 1.4;
+  font-weight: 500;
+  color: #333;
+}
+
+.editor-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.monaco-editor {
+  width: 100%;
   min-height: 400px;
-}
-
-.config-textarea textarea.error {
-  border-color: #f44336;
-}
-
-.config-display {
-  background: #f5f5f5;
   border: 1px solid #ddd;
   border-radius: 4px;
-  padding: 16px;
-  margin: 0;
-  overflow: auto;
-  max-height: 500px;
-  min-height: 200px;
-  width: 100%;
-  box-sizing: border-box;
+  overflow: hidden;
+  position: relative;
 }
 
-.json-display {
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+.monaco-editor:focus-within {
+  border-color: #1976d2;
+}
+
+.no-config-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+  z-index: 10;
+}
+
+.no-config-overlay mat-icon {
+  font-size: 48px;
+  width: 48px;
+  height: 48px;
+  color: #666;
+  margin-bottom: 16px;
+}
+
+.no-config-overlay p {
+  margin: 8px 0;
+  color: #666;
+}
+
+.no-config-overlay .help-text {
   font-size: 14px;
-  line-height: 1.4;
-  margin: 0;
-  white-space: pre;
-  word-wrap: normal;
+  color: #999;
 }
 
-/* Custom scrollbar styling for better visibility */
-.config-display::-webkit-scrollbar,
-.json-display::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+.error-message {
+  display: flex;
+  align-items: center;
+  margin-top: 8px;
+  color: #d32f2f;
+  font-size: 12px;
 }
 
-.config-display::-webkit-scrollbar-track,
-.json-display::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-.config-display::-webkit-scrollbar-thumb,
-.json-display::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
-}
-
-.config-display::-webkit-scrollbar-thumb:hover,
-.json-display::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+.error-message mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  margin-right: 4px;
 }
 
 .no-config {
   text-align: center;
   padding: 40px 20px;
   color: #666;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .no-config mat-icon {
@@ -132,7 +157,7 @@
 
 mat-dialog-actions {
   margin-top: 16px;
-  padding: 0;
+  padding: 0 8px 8px 8px;
 }
 
 mat-dialog-actions button {

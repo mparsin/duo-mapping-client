@@ -17,33 +17,23 @@
         </div>
       }
       
-      @if (isEditing()) {
-        <mat-form-field appearance="outline" class="config-textarea">
-          <mat-label>Configuration JSON</mat-label>
-          <textarea
-            matInput
-            [(ngModel)]="configText"
-            rows="20"
-            placeholder="Enter JSON configuration..."
-            [class.error]="!isValidJson">
-          </textarea>
-          @if (!isValidJson) {
-            <mat-error>Invalid JSON format</mat-error>
-          }
-        </mat-form-field>
-      } @else {
-        @if (hasConfig) {
-          <div class="config-display">
-            <pre class="json-display" [innerHTML]="highlightedConfig"></pre>
+      <div class="config-editor-container">
+        <label class="editor-label">Configuration JSON</label>
+        <div #editor class="monaco-editor"></div>
+        @if (!isValidJson && isEditing()) {
+          <div class="error-message">
+            <mat-icon color="warn">error</mat-icon>
+            <span>Invalid JSON format</span>
           </div>
-        } @else {
-          <div class="no-config">
+        }
+        @if (!hasConfig && !isEditing()) {
+          <div class="no-config-overlay">
             <mat-icon>settings</mat-icon>
             <p>No configuration available for this category.</p>
             <p class="help-text">Click "Add Configuration" to create one.</p>
           </div>
         }
-      }
+      </div>
     </div>
   </mat-dialog-content>
   
@@ -72,7 +62,7 @@
           Delete
         </button>
       } @else {
-        <button mat-raised-button color="primary" (click)="startEditing()">
+        <button mat-raised-button color="primary" (click)="addConfiguration()">
           <mat-icon>add</mat-icon>
           Add Configuration
         </button>
