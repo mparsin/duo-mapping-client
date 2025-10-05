@@ -677,6 +677,12 @@ tr[data-line-id].excluded-line {
   height: 18px;
 }
 
+.key-icons-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .lines-table .mat-column-reason {
   flex: 1 1 auto;
   min-width: 200px;

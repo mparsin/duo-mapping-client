@@ -10,6 +10,7 @@ export interface Category {
   percent_mapped?: number;
   tab?: string;
   epic?: string;
+  config?: any;
 }
 
 

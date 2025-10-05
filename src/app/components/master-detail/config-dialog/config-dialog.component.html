@@ -1,0 +1,22 @@
+<div class="config-dialog">
+  <mat-dialog-content>
+    <div class="dialog-header">
+      <h2 mat-dialog-title>{{ data.categoryName }} - Configuration</h2>
+    </div>
+    
+    <div class="config-content">
+      @if (data.config) {
+        <pre class="json-display" [innerHTML]="highlightedConfig"></pre>
+      } @else {
+        <p class="no-config">No configuration available for this category.</p>
+      }
+    </div>
+  </mat-dialog-content>
+  
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="onClose()">
+      <mat-icon>close</mat-icon>
+      Close
+    </button>
+  </mat-dialog-actions>
+</div>

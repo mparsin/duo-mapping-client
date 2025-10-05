@@ -19,6 +19,7 @@ export interface Line {
   column_id?: number;
   exclude?: boolean;
   iskeyfield?: boolean;
+  isfkfield?: boolean;
   [key: string]: any; // Allow for additional properties
 }
 

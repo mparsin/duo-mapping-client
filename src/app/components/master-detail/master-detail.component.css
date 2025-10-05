@@ -457,6 +457,26 @@
   border: 1px solid #bbdefb;
 }
 
+.config-button {
+  width: 28px;
+  height: 28px;
+  line-height: 28px;
+  min-width: 28px;
+  padding: 1px;
+  color: #666;
+}
+
+.config-button:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+  color: #333;
+}
+
+.config-button mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
 .category-description {
   margin: 0;
   font-size: 0.875rem;

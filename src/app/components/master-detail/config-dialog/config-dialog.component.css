@@ -1,0 +1,67 @@
+.config-dialog {
+  min-width: 600px;
+  max-width: 90vw;
+  width: 800px;
+}
+
+.dialog-header h2 {
+  margin: 0 0 16px 0;
+  color: #333;
+  font-size: 18px;
+}
+
+.config-content {
+  margin-bottom: 16px;
+}
+
+.json-display {
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 16px;
+  margin: 0;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 14px;
+  line-height: 1.4;
+  overflow: auto;
+  white-space: pre;
+  word-wrap: normal;
+  max-height: 500px;
+  min-height: 200px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Custom scrollbar styling for better visibility */
+.json-display::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.json-display::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.json-display::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.json-display::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Prism.js syntax highlighting is now imported globally */
+
+.no-config {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  padding: 20px;
+}
+
+mat-dialog-actions {
+  margin-top: 16px;
+  padding: 0;
+}

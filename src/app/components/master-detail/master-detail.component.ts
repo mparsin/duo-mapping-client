@@ -11,6 +11,7 @@ import { MatExpansionModule } from '@angular/material/expansion';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
+import { MatDialogModule } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
@@ -18,6 +19,8 @@ import { CategoryRefreshService } from '../../services/category-refresh.service'
 import { Category } from '../../models/category.model';
 import { LinesComponent } from '../lines/lines.component';
 import {MatTooltip} from '@angular/material/tooltip';
+import { MatDialog } from '@angular/material/dialog';
+import { ConfigDialogComponent } from './config-dialog/config-dialog.component';
 
 @Component({
   selector: 'app-master-detail',
@@ -35,6 +38,7 @@ import {MatTooltip} from '@angular/material/tooltip';
     MatInputModule,
     MatFormFieldModule,
     MatSelectModule,
+    MatDialogModule,
     LinesComponent,
     MatTooltip
   ],
@@ -125,7 +129,8 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
     private categoryRefreshService: CategoryRefreshService,
     private snackBar: MatSnackBar,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private dialog: MatDialog
   ) {}
 
   // Ensures the selected category card is scrolled into view (e.g., after refresh or route navigation)
@@ -418,6 +423,18 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
   clearAllFilters(): void {
     this.filterText.set('');
     this.selectedEpic.set(null);
+  }
+
+  // Open config dialog
+  openConfigDialog(category: Category): void {
+    this.dialog.open(ConfigDialogComponent, {
+      width: '800px',
+      maxWidth: '90vw',
+      data: { 
+        categoryName: category.Name,
+        config: category.config
+      }
+    });
   }
 }
 

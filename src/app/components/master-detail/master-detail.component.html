@@ -184,6 +184,16 @@
                           }
                         </div>
                         <div class="category-badges">
+                          @if (category.config) {
+                            <button
+                              mat-icon-button
+                              (click)="openConfigDialog(category); $event.stopPropagation()"
+                              aria-label="View configuration"
+                              matTooltip="View configuration"
+                              class="config-button">
+                              <mat-icon>settings</mat-icon>
+                            </button>
+                          }
                           @if (category.percent_mapped !== undefined) {
                             <div class="percentage-badge">
                               {{ roundPercentage(category.percent_mapped) }}%
