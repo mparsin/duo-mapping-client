@@ -53,6 +53,7 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
   filterText = signal<string>('');
   epicFilterVisible = signal<boolean>(false);
   selectedEpic = signal<string | null>(null);
+  aiLoadFilterEnabled = signal<boolean>(false);
   private refreshSubscription?: Subscription;
 
   // Computed property to group categories by tab with filtering
@@ -60,8 +61,9 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
     const cats = this.categories();
     const filter = this.filterText().toLowerCase().trim();
     const selectedEpicValue = this.selectedEpic();
+    const aiLoadFilter = this.aiLoadFilterEnabled();
     
-    // Filter categories based on search text and epic filter
+    // Filter categories based on search text, epic filter, and AI Load filter
     let filteredCats = cats;
     
     // Apply text filter
@@ -78,6 +80,13 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
     if (selectedEpicValue) {
       filteredCats = filteredCats.filter(category => 
         category.epic === selectedEpicValue
+      );
+    }
+    
+    // Apply AI Load filter
+    if (aiLoadFilter) {
+      filteredCats = filteredCats.filter(category => 
+        category.isaiload === true
       );
     }
     
@@ -401,6 +410,11 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
     this.filterText.set('');
   }
 
+  // Toggle AI Load filter
+  toggleAiLoadFilter(): void {
+    this.aiLoadFilterEnabled.set(!this.aiLoadFilterEnabled());
+  }
+
   // Toggle epic filter visibility
   toggleEpicFilter(): void {
     this.epicFilterVisible.set(!this.epicFilterVisible());
@@ -423,6 +437,7 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
   clearAllFilters(): void {
     this.filterText.set('');
     this.selectedEpic.set(null);
+    this.aiLoadFilterEnabled.set(false);
   }
 
   // Open config dialog

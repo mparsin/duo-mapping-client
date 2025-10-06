@@ -11,6 +11,7 @@ export interface Category {
   tab?: string;
   epic?: string;
   config?: any;
+  isaiload?: boolean;
 }
 
 

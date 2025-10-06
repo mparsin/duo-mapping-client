@@ -46,6 +46,18 @@
         }
       </mat-form-field>
 
+      <!-- AI Load Filter Toggle -->
+      <div class="ai-load-filter-section">
+        <button
+          mat-stroked-button
+          (click)="toggleAiLoadFilter()"
+          [class.active]="aiLoadFilterEnabled()"
+          class="ai-load-filter-toggle">
+          <mat-icon>smart_toy</mat-icon>
+          AI Load Only
+        </button>
+      </div>
+
       <!-- Epic Filter Toggle and Selection -->
       <div class="epic-filter-section">
         <button
@@ -83,7 +95,7 @@
         }
       </div>
 
-      @if ((filterText() || selectedEpic()) && filteredCategoriesCount() > 0) {
+      @if ((filterText() || selectedEpic() || aiLoadFilterEnabled()) && filteredCategoriesCount() > 0) {
         <div class="filter-results-count">
           {{ filteredCategoriesCount() }} {{ filteredCategoriesCount() === 1 ? 'category' : 'categories' }} found
         </div>
@@ -164,6 +176,8 @@
                     [class.selected]="selectedCategory()?.id === category.id"
                     [class.fully-mapped]="category.percent_mapped === 100"
                     [class.excluded]="isCategoryExcluded(category)"
+                    [class.ai-load]="category.isaiload"
+                    [class.non-ai-load]="!category.isaiload"
                     (click)="selectCategory(category)">
 
                     <!-- Progress bar background -->
@@ -205,6 +219,9 @@
                       </div>
                       @if (category.description) {
                         <p class="category-description">{{ category.description }}</p>
+                      }
+                      @if (category.isaiload && !aiLoadFilterEnabled()) {
+                        <span class="ai-load-badge">AI Load</span>
                       }
                     </mat-card-content>
                   </mat-card>
