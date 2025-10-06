@@ -71,6 +71,17 @@
 
     <button
       mat-raised-button
+      color="primary"
+      (click)="generateUploadConfig()"
+      class="generate-schema-btn"
+      matTooltip="Generate Upload Configuration File"
+      matTooltipPosition="below">
+      <mat-icon>build</mat-icon>
+      Generate Upload Config
+    </button>
+
+    <button
+      mat-raised-button
       color="warn"
       (click)="generateSchema()"
       class="generate-schema-btn"
@@ -79,6 +90,8 @@
       <mat-icon>download</mat-icon>
       Generate Schema
     </button>
+
+
   </mat-toolbar>
 
   <!-- Main Content -->

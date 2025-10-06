@@ -140,6 +140,42 @@ export class App implements OnInit, OnDestroy {
     });
   }
 
+  generateUploadConfig(): void {
+    // Show loading message
+    const loadingSnackBar = this.snackBar.open('Generating upload config...', '', {
+      duration: 0, // Keep open until dismissed
+      horizontalPosition: 'center',
+      verticalPosition: 'top',
+      panelClass: 'upload-config-generation-snackbar'
+    });
+
+    // Download upload config from API
+    this.apiService.downloadUploadConfig().subscribe({
+      next: (blob) => {
+        // Download the upload config file
+        this.schemaGenerationService.downloadSchemaFromBlob(blob, 'upload-config.json');
+
+        loadingSnackBar.dismiss();
+        this.snackBar.open('Upload config generated and downloaded successfully!', 'Close', {
+          duration: 3000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top',
+          panelClass: 'success-snackbar'
+        });
+      },
+      error: (error) => {
+        console.error('Error downloading upload config:', error);
+        loadingSnackBar.dismiss();
+        this.snackBar.open('Error downloading upload config. Please try again.', 'Close', {
+          duration: 5000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top',
+          panelClass: 'error-snackbar'
+        });
+      }
+    });
+  }
+
   // Search methods
   onSearchInput(event: Event): void {
     const target = event.target as HTMLInputElement;

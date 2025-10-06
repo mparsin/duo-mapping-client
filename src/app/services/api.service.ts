@@ -144,6 +144,13 @@ export class ApiService {
     });
   }
 
+  // Download upload config
+  downloadUploadConfig(): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/download-upload-config`, {
+      responseType: 'blob'
+    });
+  }
+
   // Toggle exclude status for a line
   toggleLineExclude(lineId: number, exclude: boolean): Observable<Line> {
     const body = {
