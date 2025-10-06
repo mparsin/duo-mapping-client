@@ -445,7 +445,10 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(ConfigDialogComponent, {
       width: '800px',
       maxWidth: '90vw',
-      data: { 
+      hasBackdrop: true,
+      disableClose: true,
+      panelClass: 'movable-dialog',
+      data: {
         categoryId: category.id,
         categoryName: category.Name,
         config: category.config
@@ -460,12 +463,23 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
         const index = currentCategories.findIndex(cat => cat.id === result.id);
         if (index !== -1) {
           const updatedCategories = [...currentCategories];
-          updatedCategories[index] = result;
+          const originalCategory = updatedCategories[index];
+          // Preserve all original properties and only update what's in the result
+          updatedCategories[index] = {
+            ...originalCategory,
+            ...result,
+            // Explicitly preserve critical properties if missing from result
+            tab: result.tab || originalCategory.tab,
+            epic: result.epic !== undefined ? result.epic : originalCategory.epic,
+            isaiload: result.isaiload !== undefined ? result.isaiload : originalCategory.isaiload,
+            percent_mapped: result.percent_mapped !== undefined ? result.percent_mapped : originalCategory.percent_mapped,
+            description: result.description !== undefined ? result.description : originalCategory.description
+          };
           this.categories.set(updatedCategories);
 
           // Update selected category if it's the one being modified
           if (this.selectedCategory()?.id === result.id) {
-            this.selectedCategory.set(result);
+            this.selectedCategory.set(updatedCategories[index]);
           }
         }
       }

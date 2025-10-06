@@ -1,9 +1,9 @@
-<div class="config-dialog">
+<div class="config-dialog" cdkDrag cdkDragRootElement=".cdk-overlay-pane">
   <mat-dialog-content>
-    <div class="dialog-header">
+    <div class="dialog-header" cdkDragHandle>
       <h2 mat-dialog-title>{{ data.categoryName }} - Configuration</h2>
     </div>
-    
+
     <div class="config-content">
       @if (isLoading()) {
         <div class="loading-container">
@@ -16,9 +16,8 @@
           <p>{{ errorMessage() }}</p>
         </div>
       }
-      
+
       <div class="config-editor-container">
-        <label class="editor-label">Configuration JSON</label>
         <div #editor class="monaco-editor"></div>
         @if (!isValidJson && isEditing()) {
           <div class="error-message">
@@ -36,17 +35,17 @@
       </div>
     </div>
   </mat-dialog-content>
-  
+
   <mat-dialog-actions align="end">
     @if (isEditing()) {
       <button mat-button (click)="cancelEditing()" [disabled]="isLoading()">
         <mat-icon>cancel</mat-icon>
         Cancel
       </button>
-      <button 
-        mat-raised-button 
-        color="primary" 
-        (click)="saveConfig()" 
+      <button
+        mat-raised-button
+        color="primary"
+        (click)="saveConfig()"
         [disabled]="!isValidJson || !hasChanges || isLoading()">
         <mat-icon>save</mat-icon>
         Save

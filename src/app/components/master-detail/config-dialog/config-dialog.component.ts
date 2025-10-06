@@ -8,6 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { FormsModule } from '@angular/forms';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 import { ApiService } from '../../../services/api.service';
 
 declare const monaco: any;
@@ -37,7 +38,8 @@ interface MonacoEditor {
     MatInputModule,
     MatSnackBarModule,
     MatProgressSpinnerModule,
-    FormsModule
+    FormsModule,
+    DragDropModule
   ],
   templateUrl: './config-dialog.component.html',
   styleUrl: './config-dialog.component.css'
@@ -48,11 +50,11 @@ export class ConfigDialogComponent implements OnInit, AfterViewInit, OnDestroy {
   isLoading = signal<boolean>(false);
   hasError = signal<boolean>(false);
   errorMessage = signal<string>('');
-  
+
   // Form data
   configText = '';
   originalConfigText = '';
-  
+
   // Monaco editor
   @ViewChild('editor', { static: false }) editorElement!: ElementRef;
   private editor: any = null;
@@ -79,7 +81,7 @@ export class ConfigDialogComponent implements OnInit, AfterViewInit, OnDestroy {
     console.log('ngAfterViewInit called');
     console.log('Editor element:', this.editorElement);
     console.log('Editor element nativeElement:', this.editorElement?.nativeElement);
-    
+
     // Initialize Monaco editor
     try {
       await this.initializeEditor();
@@ -105,7 +107,7 @@ export class ConfigDialogComponent implements OnInit, AfterViewInit, OnDestroy {
 
     try {
       console.log('Initializing Monaco editor...');
-      
+
       // Load Monaco editor from CDN if not already loaded
       if (typeof monaco === 'undefined') {
         console.log('Loading Monaco from CDN...');
@@ -187,26 +189,26 @@ export class ConfigDialogComponent implements OnInit, AfterViewInit, OnDestroy {
       // Load Monaco editor from CDN with a more reliable URL
       const script = document.createElement('script');
       script.src = 'https://unpkg.com/monaco-editor@0.45.0/min/vs/loader.js';
-      
+
       script.onload = () => {
         console.log('Monaco script loaded, configuring require...');
         // Configure Monaco loader
-        (window as any).require.config({ 
-          paths: { 
-            'vs': 'https://unpkg.com/monaco-editor@0.45.0/min/vs' 
-          } 
+        (window as any).require.config({
+          paths: {
+            'vs': 'https://unpkg.com/monaco-editor@0.45.0/min/vs'
+          }
         });
         (window as any).require(['vs/editor/editor.main'], () => {
           console.log('Monaco editor loaded successfully from CDN');
           resolve();
         });
       };
-      
+
       script.onerror = (error) => {
         console.error('Failed to load Monaco editor from CDN:', error);
         reject(new Error('Failed to load Monaco editor'));
       };
-      
+
       console.log('Adding script to document head');
       document.head.appendChild(script);
     });
@@ -240,7 +242,7 @@ export class ConfigDialogComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isEditing.set(true);
     this.hasError.set(false);
     this.errorMessage.set('');
-    
+
     // Update editor to editable mode
     if (this.editor) {
       this.editor.updateOptions({ readOnly: false });
@@ -250,18 +252,18 @@ export class ConfigDialogComponent implements OnInit, AfterViewInit, OnDestroy {
   addConfiguration(): void {
     console.log('addConfiguration called');
     console.log('Editor exists:', !!this.editor);
-    
+
     // Set editing state first
     this.isEditing.set(true);
     this.hasError.set(false);
     this.errorMessage.set('');
-    
+
     // If editor doesn't exist yet, it will be handled in ngAfterViewInit
     if (!this.editor) {
       console.log('Editor not available yet, but editing state set');
       return;
     }
-    
+
     // Update editor content and make it editable
     console.log('Updating editor with new content');
     this.editor.setValue('{\n  \n}');
@@ -276,13 +278,13 @@ export class ConfigDialogComponent implements OnInit, AfterViewInit, OnDestroy {
       this.onClose();
       return;
     }
-    
+
     // Otherwise, restore original content and exit edit mode
     this.configText = this.originalConfigText;
     this.isEditing.set(false);
     this.hasError.set(false);
     this.errorMessage.set('');
-    
+
     // Update editor to read-only mode and restore original content
     if (this.editor) {
       this.editor.setValue(this.originalConfigText);
@@ -303,8 +305,8 @@ export class ConfigDialogComponent implements OnInit, AfterViewInit, OnDestroy {
 
     try {
       const configObject = JSON.parse(this.configText);
-      
-      const operation = this.hasConfig 
+
+      const operation = this.hasConfig
         ? this.apiService.updateCategoryConfig(this.data.categoryId, configObject)
         : this.apiService.createCategoryConfig(this.data.categoryId, configObject);
 
@@ -363,6 +365,11 @@ export class ConfigDialogComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onClose(): void {
+    // Prevent closing if there are unsaved changes or if creating a new config
+    if (this.hasChanges || (!this.hasConfig && this.isEditing())) {
+      // User must explicitly cancel or save before closing
+      return;
+    }
     this.dialogRef.close();
   }
 }
