@@ -8,13 +8,13 @@ import { Column } from '../models/column.model';
 import { SubCategory } from '../models/sub-category.model';
 import { SearchResult } from '../models/search-result.model';
 import { TableMatch } from '../models/table-match.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
-   private baseUrl = 'https://xwrhlmtfk9.execute-api.us-east-1.amazonaws.com/prod/api';
-  // private baseUrl = 'http://127.0.0.1:8000/api';
+  private baseUrl = environment.apiUrl;
 
   constructor(private http: HttpClient) { }
 
