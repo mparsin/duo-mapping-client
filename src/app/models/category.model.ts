@@ -11,6 +11,9 @@ export interface Category {
   tab?: string;
   epic?: string;
   config?: any;
+  // Upload-config editor metadata
+  table_set_id?: number | null;
+  line_no?: number | null;
   isaiload?: boolean;
 }
 

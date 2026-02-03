@@ -1,0 +1,332 @@
+<div class="editor-page">
+  @if (loading()) {
+    <div class="loading">
+      <mat-spinner diameter="48"></mat-spinner>
+      <div class="loading-text">Loading Upload Config Editor…</div>
+    </div>
+  } @else if (error()) {
+    <mat-card class="error-card">
+      <mat-card-content>
+        <div class="error">
+          <mat-icon color="warn">error</mat-icon>
+          <div class="error-text">{{ error() }}</div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  } @else {
+    <div class="panes">
+      <mat-card class="pane pane-left">
+        <mat-card-header class="set-header">
+          <mat-card-title>Table Sets</mat-card-title>
+          <button mat-icon-button (click)="reload()" [disabled]="loading()">
+            <mat-icon>refresh</mat-icon>
+          </button>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="set-create">
+            <mat-form-field appearance="outline" class="set-create-name">
+              <mat-label>New set name</mat-label>
+              <input matInput [(ngModel)]="newSetName" placeholder="e.g. Core Upload" />
+            </mat-form-field>
+            <button
+              mat-icon-button
+              (click)="createSet()"
+              [disabled]="isCreatingSet()">
+              <mat-icon>add</mat-icon>
+            </button>
+          </div>
+
+          <div
+            class="set-list"
+            cdkDropList
+            [cdkDropListData]="tableSets()"
+            (cdkDropListDropped)="onSetDrop($event)">
+            @for (set of tableSets(); track (set.id ?? $index)) {
+              <div
+                class="set-item"
+                cdkDrag
+                [class.selected]="set.id === selectedSetId()"
+                (click)="selectSet(set.id)">
+                <div class="set-drag-handle" cdkDragHandle>
+                  <mat-icon>drag_indicator</mat-icon>
+                </div>
+
+                <div class="set-main">
+                  @if (editingSetId() === set.id) {
+                    <mat-form-field appearance="outline" class="set-rename-field">
+                      <mat-label>Set name</mat-label>
+                      <input matInput [(ngModel)]="editingSetName" (click)="$event.stopPropagation()" />
+                    </mat-form-field>
+                  } @else {
+                    <div class="set-name">{{ set.name }}</div>
+                    <div class="set-meta">
+                      @if (set.seq_no !== null && set.seq_no !== undefined) {
+                        <span class="set-seq">seq: {{ set.seq_no }}</span>
+                      } @else {
+                        <span class="set-seq set-seq-null">seq: null</span>
+                      }
+                    </div>
+                  }
+                </div>
+
+                <div class="set-actions">
+                  @if (editingSetId() === set.id) {
+                    <button
+                      mat-icon-button
+                      color="primary"
+                      (click)="saveRename(set); $event.stopPropagation()"
+                      [disabled]="isSavingSet()">
+                      <mat-icon>check</mat-icon>
+                    </button>
+                    <button mat-icon-button (click)="cancelRename(); $event.stopPropagation()">
+                      <mat-icon>close</mat-icon>
+                    </button>
+                  } @else {
+                    <button
+                      mat-icon-button
+                      (click)="startRename(set); $event.stopPropagation()"
+                      [disabled]="isReorderingSets()">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button
+                      mat-icon-button
+                      color="warn"
+                      (click)="deleteSet(set); $event.stopPropagation()"
+                      [disabled]="deletingSetId() !== null || isReorderingSets()">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  }
+                </div>
+              </div>
+            } @empty {
+              <div class="placeholder">No table sets found.</div>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="pane pane-center">
+        <mat-card-header>
+          <mat-card-title>
+            Tables in Set
+            @if (selectedSet()) {
+              <span class="subtle">— {{ selectedSet()!.name }}</span>
+            }
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          @if (!selectedSet()) {
+            <div class="placeholder">Select a set on the left to manage tables and ordering.</div>
+          } @else {
+            <div
+              class="table-list"
+              cdkDropList
+              [cdkDropListData]="categoriesInSelectedSet()"
+              (cdkDropListDropped)="onTableDrop($event)">
+              @for (cat of categoriesInSelectedSet(); track (cat.id ?? $index)) {
+                <div
+                  class="table-item"
+                  cdkDrag
+                  [class.selected]="cat.id === selectedCategoryId()"
+                  (click)="selectCategory(cat.id)">
+                  <div class="table-drag-handle" cdkDragHandle>
+                    <mat-icon>drag_indicator</mat-icon>
+                  </div>
+
+                  <div class="table-main">
+                    <div class="table-title">
+                      <span class="field-value">{{ cat.Name }}</span>
+                    </div>
+                    <div class="table-subtitle">
+                      <span class="field-value">{{ cat.config?.table || '—' }}</span>
+                    </div>
+                    @if (cat.config?.filter) {
+                      <div class="table-filter">
+                        <mat-icon class="table-filter-icon">filter_alt</mat-icon>
+                        <span class="field-value">{{ cat.config.filter }}</span>
+                      </div>
+                    }
+                    <div class="table-meta">
+                      id: {{ cat.id }}
+                      · line_no: {{ cat.line_no ?? 'null' }}
+                      @if (isCategoryDirty(cat.id)) {
+                        <span class="dirty-inline">· Unsaved</span>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="table-actions">
+                    <button
+                      mat-icon-button
+                      color="warn"
+                      (click)="unassignFromSet(cat); $event.stopPropagation()"
+                      [disabled]="updatingCategoryId() !== null || isReorderingTables()">
+                      <mat-icon>remove_circle</mat-icon>
+                    </button>
+                  </div>
+                </div>
+              } @empty {
+                <div class="placeholder">No tables assigned to this set yet.</div>
+              }
+            </div>
+
+            <div class="unassigned-section">
+              <div class="unassigned-header">
+                <div class="unassigned-title">Unassigned (config present)</div>
+              </div>
+
+              <div class="unassigned-list">
+                @for (cat of computedUnassigned(); track (cat.id ?? $index)) {
+                  <div class="unassigned-item">
+                    <div class="unassigned-main">
+                      <div class="unassigned-name">
+                        <span class="field-value">{{ cat.Name }}</span>
+                      </div>
+                      <div class="unassigned-table">
+                        <span class="field-value">{{ cat.config?.table || '—' }}</span>
+                      </div>
+                      <div class="unassigned-meta">id: {{ cat.id }}</div>
+                    </div>
+                    <button
+                      mat-stroked-button
+                      color="primary"
+                      (click)="assignUnassigned(cat)"
+                      [disabled]="updatingCategoryId() !== null">
+                      <mat-icon>arrow_forward</mat-icon>
+                      Assign
+                    </button>
+                  </div>
+                } @empty {
+                  <div class="placeholder">No unassigned categories with config.</div>
+                }
+              </div>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="pane pane-right">
+        <mat-card-header>
+          <mat-card-title>
+            Config Editor
+            @if (selectedCategory()) {
+              <span class="subtle">— {{ selectedCategory()!.Name }}</span>
+            }
+            @if (selectedCategory() && isCategoryDirty(selectedCategory()!.id)) {
+              <span class="dirty-pill">Unsaved</span>
+            }
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          @if (!selectedCategory()) {
+            <div class="placeholder">Select a table (category) in the middle panel to edit its upload config.</div>
+          } @else {
+            <div class="editor-actions">
+              <button
+                mat-raised-button
+                color="primary"
+                (click)="saveSelectedConfig()"
+                [disabled]="!canSaveSelected() || isSavingConfig()">
+                <mat-icon>save</mat-icon>
+                Save
+              </button>
+              <button
+                mat-button
+                (click)="resetSelectedDraft()"
+                [disabled]="!isCategoryDirty(selectedCategory()!.id) || isSavingConfig()">
+                <mat-icon>undo</mat-icon>
+                Reset
+              </button>
+            </div>
+
+            <mat-form-field appearance="outline" class="config-field">
+              <mat-label>Category Name</mat-label>
+              <input matInput [formControl]="categoryNameControl" placeholder="e.g. Finance COA" />
+              @if (categoryNameControl.invalid && (categoryNameControl.dirty || categoryNameControl.touched)) {
+                <mat-error>Category name is required</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-tab-group
+              [selectedIndex]="editorTabIndex()"
+              (selectedIndexChange)="onEditorTabIndexChange($event)">
+              <mat-tab label="Form">
+                <form class="config-form" [formGroup]="configForm">
+                  <mat-form-field appearance="outline" class="config-field">
+                    <mat-label>table</mat-label>
+                    <input matInput formControlName="table" placeholder="e.g. connectionGC" />
+                    @if (configForm.controls.table.invalid && (configForm.controls.table.dirty || configForm.controls.table.touched)) {
+                      <mat-error>table is required</mat-error>
+                    }
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline" class="config-field">
+                    <mat-label>endpoint</mat-label>
+                    <input matInput formControlName="endpoint" placeholder="e.g. /v1/upload/connectionGC" />
+                    @if (configForm.controls.endpoint.invalid && (configForm.controls.endpoint.dirty || configForm.controls.endpoint.touched)) {
+                      <mat-error>endpoint is required</mat-error>
+                    }
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline" class="config-field">
+                    <mat-label>batch_size</mat-label>
+                    <input matInput type="number" formControlName="batch_size" min="1" step="1" placeholder="e.g. 1000" />
+                    @if (configForm.controls.batch_size.invalid && (configForm.controls.batch_size.dirty || configForm.controls.batch_size.touched)) {
+                      <mat-error>batch_size must be a positive integer</mat-error>
+                    }
+                  </mat-form-field>
+                </form>
+              </mat-tab>
+
+              <mat-tab label="Raw JSON">
+                <div class="raw-json">
+                  <div #rawEditor class="raw-monaco"></div>
+                  @if (selectedDraft() && !selectedDraft()!.isJsonValid) {
+                    <div class="inline-error">
+                      <mat-icon color="warn">error</mat-icon>
+                      Invalid JSON (fix syntax before saving)
+                    </div>
+                  }
+                </div>
+              </mat-tab>
+            </mat-tab-group>
+
+            <div class="preview-panel">
+              <div class="preview-actions">
+                <button
+                  mat-stroked-button
+                  color="primary"
+                  (click)="previewUploadConfig()"
+                  [disabled]="previewLoading()">
+                  <mat-icon>visibility</mat-icon>
+                  Preview upload-config.json
+                </button>
+                <button mat-stroked-button (click)="downloadUploadConfig()">
+                  <mat-icon>download</mat-icon>
+                  Download
+                </button>
+              </div>
+
+              @if (previewLoading()) {
+                <div class="preview-loading">
+                  <mat-spinner diameter="28"></mat-spinner>
+                  <div class="loading-text">Loading preview…</div>
+                </div>
+              } @else if (previewError()) {
+                <div class="inline-error">
+                  <mat-icon color="warn">error</mat-icon>
+                  {{ previewError() }}
+                </div>
+              } @else if (previewJsonText()) {
+                <pre class="preview-json">{{ previewJsonText() }}</pre>
+              } @else {
+                <div class="placeholder">Click “Preview upload-config.json” to fetch and render the generated config.</div>
+              }
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
+  }
+</div>
+

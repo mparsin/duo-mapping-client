@@ -295,6 +295,18 @@
   border-radius: 24px;
 }
 
+.upload-config-editor-btn {
+  margin-left: 16px;
+  height: 48px;
+  border-radius: 24px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.upload-config-editor-btn mat-icon {
+  margin-right: 8px;
+}
+
 .generate-schema-btn:hover {
   transform: translateY(-2px) scale(1.05);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);

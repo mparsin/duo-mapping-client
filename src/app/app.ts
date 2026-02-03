@@ -176,6 +176,11 @@ export class App implements OnInit, OnDestroy {
     });
   }
 
+  navigateToUploadConfigEditor(): void {
+    this.router.navigate(['/upload-config-editor']);
+    this.showSearchResults.set(false);
+  }
+
   // Search methods
   onSearchInput(event: Event): void {
     const target = event.target as HTMLInputElement;

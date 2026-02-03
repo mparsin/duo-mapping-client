@@ -70,6 +70,17 @@
     </mat-chip-set>
 
     <button
+      mat-stroked-button
+      color="primary"
+      (click)="navigateToUploadConfigEditor()"
+      class="upload-config-editor-btn"
+      matTooltip="Edit table sets, ordering, and upload-config fields"
+      matTooltipPosition="below">
+      <mat-icon>tune</mat-icon>
+      Upload Config Editor
+    </button>
+
+    <button
       mat-raised-button
       color="primary"
       (click)="generateUploadConfig()"
