@@ -10,6 +10,51 @@ import { SearchResult } from '../models/search-result.model';
 import { TableMatch } from '../models/table-match.model';
 import { environment } from '../../environments/environment';
 
+/** Body for POST /api/categories/{category_id}/lines */
+export interface CreateLineBody {
+  name: string;
+  sub_category_id?: number;
+  field_name?: string;
+  default?: string;
+  reason?: string;
+  comment?: string;
+  seq_no?: number;
+  customer_settings?: string;
+  no_of_chars?: string;
+  table_id?: number;
+  column_id?: number;
+  exclude?: boolean;
+  iskeyfield?: boolean;
+  isfkfield?: boolean;
+}
+
+/** Response from GET /api/column-comment */
+export interface ColumnCommentResponse {
+  table_name: string;
+  column_name: string;
+  comment: string;
+  table_id?: number;
+  column_id?: number;
+}
+
+/** Body for PATCH /api/lines/{line_id} (any subset of fields) */
+export interface LinePatchBody {
+  name?: string;
+  field_name?: string;
+  default?: string;
+  reason?: string;
+  comment?: string;
+  seq_no?: number;
+  customer_settings?: string;
+  no_of_chars?: string;
+  sub_category_id?: number | null;
+  table_id?: number | null;
+  column_id?: number | null;
+  exclude?: boolean;
+  iskeyfield?: boolean;
+  isfkfield?: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -38,6 +83,21 @@ export class ApiService {
     return this.http.get<Line[]>(`${this.baseUrl}/categories/${categoryId}/lines`);
   }
 
+  // Get a single line by ID (for edit form prefill)
+  getLine(lineId: number): Observable<Line> {
+    return this.http.get<Line>(`${this.baseUrl}/lines/${lineId}`);
+  }
+
+  // Create a new line in a category
+  createLine(categoryId: number, body: CreateLineBody): Observable<Line> {
+    return this.http.post<Line>(`${this.baseUrl}/categories/${categoryId}/lines`, body);
+  }
+
+  // Partial update of a line (send only fields that change)
+  patchLine(lineId: number, body: Partial<LinePatchBody>): Observable<Line> {
+    return this.http.patch<Line>(`${this.baseUrl}/lines/${lineId}`, body);
+  }
+
   // Get all tables
   getTables(): Observable<Table[]> {
     return this.http.get<Table[]>(`${this.baseUrl}/tables`);
@@ -46,6 +106,15 @@ export class ApiService {
   // Get columns for a specific table
   getColumnsByTable(tableId: number): Observable<Column[]> {
     return this.http.get<Column[]>(`${this.baseUrl}/tables/${tableId}/columns`);
+  }
+
+  // Get column comment for initializing Reason field (table_name and column_name required)
+  getColumnComment(tableName: string, columnName: string): Observable<ColumnCommentResponse> {
+    const params = {
+      table_name: tableName,
+      column_name: columnName
+    };
+    return this.http.get<ColumnCommentResponse>(`${this.baseUrl}/column-comment`, { params });
   }
 
   // Update a line

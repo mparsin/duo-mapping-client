@@ -16,6 +16,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { Observable, map, startWith, forkJoin, of, catchError } from 'rxjs';
 import { ApiService } from '../../services/api.service';
@@ -48,6 +49,7 @@ import { EditLineDialogComponent } from './edit-line-dialog/edit-line-dialog.com
     MatAutocompleteModule,
     MatCardModule,
     MatDividerModule,
+    MatTooltipModule,
     ReactiveFormsModule,
     FormsModule
   ],
@@ -598,27 +600,38 @@ export class LinesComponent implements OnInit, OnDestroy, OnChanges {
   openEditDialog(line: Line): void {
     const dialogRef = this.dialog.open(EditLineDialogComponent, {
       width: '500px',
-      data: { 
-        line: line,
-        categoryId: this.categoryId
+      data: {
+        line,
+        categoryId: this.categoryId ?? undefined
       }
     });
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        // Update the line in the local array
-        const currentLines = this.lines();
-        const index = currentLines.findIndex(l => l.id === line.id);
-        if (index !== -1) {
-          currentLines[index] = { ...currentLines[index], ...result };
-          this.lines.set([...currentLines]);
-        }
-
-        // Trigger category refresh to update progress
+        this.updateLinesData();
         this.triggerCategoryRefresh();
+      }
+    });
+  }
 
-        // Note: Success message is now handled in the dialog component
-        // No need to show another success message here
+  openAddLineDialog(subCategoryId: number | null): void {
+    const categoryId = this.categoryId;
+    if (categoryId == null) {
+      this.snackBar.open('Category is not set', 'Close', { duration: 3000 });
+      return;
+    }
+    const dialogRef = this.dialog.open(EditLineDialogComponent, {
+      width: '500px',
+      data: {
+        categoryId,
+        subCategoryId: subCategoryId ?? undefined
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.updateLinesData();
+        this.triggerCategoryRefresh();
       }
     });
   }

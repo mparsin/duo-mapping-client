@@ -284,3 +284,20 @@ mat-spinner {
   line-height: 1.4;
 }
 
+.loading-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 24px;
+}
+
+.key-fields-section {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.key-fields-section .key-checkbox {
+  margin-right: 8px;
+}
+

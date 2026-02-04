@@ -23,6 +23,15 @@
         aria-label="Refresh">
         <mat-icon>refresh</mat-icon>
       </button>
+      <button
+        mat-icon-button
+        (click)="openAddLineDialog(null)"
+        [disabled]="loading()"
+        color="primary"
+        aria-label="Add line"
+        matTooltip="Add line">
+        <mat-icon>add</mat-icon>
+      </button>
     </mat-toolbar>
   }
 
@@ -421,6 +430,15 @@
                   }
                 </div>
                 <div class="right-section">
+                  <button
+                    mat-icon-button
+                    color="primary"
+                    (click)="openAddLineDialog(getSubCategoryIdFromGroupName(group))"
+                    [attr.aria-label]="'Add line to ' + group"
+                    [matTooltip]="'Add line to ' + group"
+                    class="add-line-button">
+                    <mat-icon>add</mat-icon>
+                  </button>
                   <span class="line-count">{{ groupedLines()[group].length }} line(s)</span>
                   
                   <!-- Exclude/Include Actions -->

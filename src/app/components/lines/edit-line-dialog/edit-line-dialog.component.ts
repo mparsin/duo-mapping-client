@@ -13,16 +13,30 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { Observable, map, startWith } from 'rxjs';
-import { ApiService } from '../../../services/api.service';
+import { ApiService, CreateLineBody, LinePatchBody } from '../../../services/api.service';
 import { CategoryRefreshService } from '../../../services/category-refresh.service';
 import { Line } from '../../../models/line.model';
 import { Table } from '../../../models/table.model';
 import { Column } from '../../../models/column.model';
+import { SubCategory } from '../../../models/sub-category.model';
 import { SearchResult } from '../../../models/search-result.model';
 
+/** Edit mode: pass existing line */
 export interface EditLineDialogData {
   line: Line;
   categoryId?: number;
+}
+
+/** Create mode: pass category and optional sub-category (null = Uncategorized) */
+export interface CreateLineDialogData {
+  categoryId: number;
+  subCategoryId?: number | null;
+}
+
+export type LineDialogData = EditLineDialogData | CreateLineDialogData;
+
+function isEditData(data: LineDialogData): data is EditLineDialogData {
+  return 'line' in data && data.line != null;
 }
 
 @Component({
@@ -50,11 +64,17 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
   editForm: FormGroup;
   tables = signal<Table[]>([]);
   columns = signal<Column[]>([]);
+  subCategories = signal<SubCategory[]>([]);
   loadingTables = signal<boolean>(false);
   loadingColumns = signal<boolean>(false);
+  loadingLine = signal<boolean>(false);
+  loadingReason = signal<boolean>(false);
   searchResults = signal<SearchResult[]>([]);
   selectedSearchResult = signal<SearchResult | null>(null);
   loadingSearch = signal<boolean>(false);
+
+  /** Current line in edit mode (set from data or after getLine); undefined in create mode */
+  line: Line | undefined;
 
   // Filtered observables for typeahead
   filteredTables$!: Observable<Table[]>;
@@ -75,23 +95,88 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
 
   constructor(
     private dialogRef: MatDialogRef<EditLineDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: EditLineDialogData,
+    @Inject(MAT_DIALOG_DATA) public data: LineDialogData,
     private fb: FormBuilder,
     private apiService: ApiService,
     private categoryRefreshService: CategoryRefreshService,
     private snackBar: MatSnackBar
   ) {
+    this.line = isEditData(data) ? data.line : undefined;
     this.editForm = this.fb.group({
-      table_name: [''],
-      column_name: [{value: '', disabled: true}],
+      name: [''],
+      field_name: [''],
+      default: [''],
+      reason: [''],
       comment: [''],
-      exclude: [false]
+      seq_no: [null as number | null],
+      customer_settings: [''],
+      no_of_chars: [''],
+      sub_category_id: [null as number | null],
+      table_name: [''],
+      column_name: [{ value: '', disabled: true }],
+      exclude: [false],
+      iskeyfield: [false],
+      isfkfield: [false]
     });
+  }
+
+  get isCreateMode(): boolean {
+    return !isEditData(this.data);
+  }
+
+  get categoryId(): number | undefined {
+    return isEditData(this.data) ? this.data.categoryId : this.data.categoryId;
   }
 
   ngOnInit(): void {
     this.setupFilteredObservables();
-    this.loadTables();
+    const catId = this.categoryId;
+    if (catId) {
+      this.apiService.getSubCategoriesByCategory(catId).subscribe({
+        next: (subs) => this.subCategories.set(subs),
+        error: () => this.subCategories.set([])
+      });
+    }
+    if (isEditData(this.data) && this.data.line?.id) {
+      const editData = this.data;
+      const lineId = editData.line.id;
+      this.loadingLine.set(true);
+      this.apiService.getLine(lineId).subscribe({
+        next: (line) => {
+          this.line = line;
+          this.loadingLine.set(false);
+          this.patchFormFromLine(line);
+          this.loadTables();
+        },
+        error: () => {
+          this.loadingLine.set(false);
+          this.patchFormFromLine(editData.line);
+          this.loadTables();
+        }
+      });
+    } else {
+      this.loadTables();
+      if (this.isCreateMode && !isEditData(this.data) && this.data.subCategoryId != null) {
+        this.editForm.patchValue({ sub_category_id: this.data.subCategoryId });
+      }
+    }
+  }
+
+  private patchFormFromLine(line: Line): void {
+    this.editForm.patchValue({
+      name: line.name ?? line.Name ?? '',
+      field_name: line.field_name ?? '',
+      default: line.default ?? '',
+      reason: line.reason ?? '',
+      comment: line.comment ?? '',
+      seq_no: line.seq_no ?? null,
+      customer_settings: line.customer_settings ?? '',
+      no_of_chars: line.no_of_chars ?? '',
+      sub_category_id: line.sub_category_id ?? null,
+      exclude: line.exclude ?? false,
+      iskeyfield: line.iskeyfield ?? false,
+      isfkfield: line.isfkfield ?? false
+    });
   }
 
   ngAfterViewInit(): void {
@@ -194,35 +279,22 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
         // Set up form subscriptions after tables are loaded
         this.setupFormSubscriptions();
 
-        // Set initial values after tables are loaded and subscriptions are set up
-        if (this.data.line.table_name) {
-          const initialTable = this.tables().find(t => t.name === this.data.line.table_name);
-          if (initialTable) {
-            this.editForm.patchValue({
-              table_name: initialTable
-            });
-          } else {
-            // If table not found in loaded tables, set as string value
-            this.editForm.patchValue({
-              table_name: this.data.line.table_name
-            });
+        const line = this.line;
+        if (line) {
+          if (line.table_name) {
+            const initialTable = this.tables().find(t => t.name === line.table_name);
+            if (initialTable) {
+              this.editForm.patchValue({ table_name: initialTable });
+              this.loadColumns(initialTable.id);
+            } else {
+              this.editForm.patchValue({ table_name: line.table_name });
+            }
+          }
+          if (line.column_name) {
+            this.editForm.patchValue({ column_name: line.column_name });
           }
         }
-        if (this.data.line.column_name) {
-          this.editForm.patchValue({
-            column_name: this.data.line.column_name
-          });
-        }
-        if (this.data.line.comment) {
-          this.editForm.patchValue({
-            comment: this.data.line.comment
-          });
-        }
-        if (this.data.line.exclude !== undefined) {
-          this.editForm.patchValue({
-            exclude: this.data.line.exclude
-          });
-        }
+        setTimeout(() => this.setInitialFocus(), 50);
       },
       error: (error) => {
         console.error('Error loading tables:', error);
@@ -249,17 +321,12 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
         this.editForm.get('column_name')?.enable();
 
         // Set initial column value if it exists and matches a loaded column
-        if (this.data.line.column_name) {
-          const initialColumn = columns.find(c => c.name === this.data.line.column_name);
+        if (this.line?.column_name) {
+          const initialColumn = columns.find(c => c.name === this.line!.column_name);
           if (initialColumn) {
-            this.editForm.patchValue({
-              column_name: initialColumn
-            });
+            this.editForm.patchValue({ column_name: initialColumn });
           } else {
-            // If column not found in loaded columns, set as string value
-            this.editForm.patchValue({
-              column_name: this.data.line.column_name
-            });
+            this.editForm.patchValue({ column_name: this.line.column_name });
           }
         }
       },
@@ -320,25 +387,22 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
   }
 
   getLineDisplayName(): string {
-    const line = this.data.line;
-    // Try different possible name fields
+    if (this.isCreateMode) {
+      const name = this.editForm.get('name')?.value?.trim();
+      return name || 'New line';
+    }
+    const line = this.line!;
     const name = line.name || line.Name || line.description || line.Description;
-
-    if (name && name.trim()) {
-      return name.trim();
-    }
-
-    // Fallback to field name or ID
-    if (line.field_name && line.field_name.trim()) {
-      return line.field_name.trim();
-    }
-
+    if (name && name.trim()) return name.trim();
+    if (line.field_name?.trim()) return line.field_name.trim();
     return `ID: ${line.id}`;
   }
 
   getLineFieldName(): string {
-    const line = this.data.line;
-    return line.field_name ?? ''
+    if (this.isCreateMode) {
+      return this.editForm.get('field_name')?.value ?? '';
+    }
+    return this.line?.field_name ?? '';
   }
 
   onCancel(): void {
@@ -373,8 +437,46 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
     return column ? column.name : '';
   }
 
+  isFetchReasonEnabled(): boolean {
+    const tableValue = this.editForm.get('table_name')?.value;
+    const columnValue = this.editForm.get('column_name')?.value;
+    const tableName = typeof tableValue === 'object' ? tableValue?.name : tableValue;
+    const columnName = typeof columnValue === 'object' ? columnValue?.name : columnValue;
+    return !!(tableName?.trim() && columnName?.trim());
+  }
+
+  onFetchReasonFromColumn(): void {
+    const tableValue = this.editForm.get('table_name')?.value;
+    const columnValue = this.editForm.get('column_name')?.value;
+    const tableName = typeof tableValue === 'object' ? tableValue?.name : tableValue;
+    const columnName = typeof columnValue === 'object' ? columnValue?.name : columnValue;
+    if (!tableName?.trim() || !columnName?.trim()) {
+      this.snackBar.open('Select a table and column first', 'Close', { duration: 3000 });
+      return;
+    }
+    this.loadingReason.set(true);
+    this.apiService.getColumnComment(tableName.trim(), columnName.trim()).subscribe({
+      next: (res) => {
+        this.editForm.patchValue({ reason: res.comment ?? '' });
+        this.loadingReason.set(false);
+        this.snackBar.open('Reason filled from column comment', 'Close', { duration: 2000 });
+      },
+      error: (err) => {
+        console.error('Error fetching column comment:', err);
+        this.loadingReason.set(false);
+        this.snackBar.open('Could not load column comment', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  getFieldNameForMatch(): string {
+    return this.isCreateMode
+      ? (this.editForm.get('field_name')?.value ?? '').trim()
+      : (this.line?.field_name ?? '').trim();
+  }
+
   onAutoMatchColumn(): void {
-    const fieldName = this.data.line.field_name;
+    const fieldName = this.getFieldNameForMatch();
     if (!fieldName || !fieldName.trim()) {
       this.snackBar.open('No field name available to match', 'Close', {
         duration: 3000
@@ -425,15 +527,10 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
   }
 
   isAutoMatchEnabled(): boolean {
-    // Enable auto-match when:
-    // 1. Table is selected (has value)
-    // 2. Field name exists
-    // 3. Columns are loaded and available
     const tableValue = this.editForm.get('table_name')?.value;
     const hasTable = tableValue && (typeof tableValue === 'object' ? tableValue.id : tableValue);
-    const hasFieldName = this.data.line.field_name && this.data.line.field_name.trim();
+    const hasFieldName = !!this.getFieldNameForMatch();
     const hasColumns = this.columns().length > 0 && !this.loadingColumns();
-
     return !!(hasTable && hasFieldName && hasColumns);
   }
 
@@ -482,74 +579,104 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
     return !!(tableValue && (typeof tableValue === 'object' ? tableValue.id : tableValue));
   }
 
-  onSave(): void {
+  private getTableAndColumnIds(): { tableId: number | null; columnId: number | null } {
     const formValue = this.editForm.value;
-
-    // Get table_id and column_id from the selected objects
-    // If no value is selected, send 0 to clear the field on the server
-    let tableId: number | undefined;
-    let columnId: number | undefined;
-
+    let tableId: number | null = null;
+    let columnId: number | null = null;
     if (formValue.table_name) {
       tableId = typeof formValue.table_name === 'object'
-        ? formValue.table_name?.id
-        : this.tables().find(t => t.name === formValue.table_name)?.id;
+        ? formValue.table_name?.id ?? null
+        : this.tables().find(t => t.name === formValue.table_name)?.id ?? null;
     }
-
     if (formValue.column_name) {
       columnId = typeof formValue.column_name === 'object'
-        ? formValue.column_name?.id
-        : this.columns().find(c => c.name === formValue.column_name)?.id;
+        ? formValue.column_name?.id ?? null
+        : this.columns().find(c => c.name === formValue.column_name)?.id ?? null;
+    }
+    return { tableId, columnId };
+  }
+
+  onSave(): void {
+    const formValue = this.editForm.getRawValue();
+    const { tableId, columnId } = this.getTableAndColumnIds();
+
+    if (this.isCreateMode) {
+      const name = (formValue.name ?? '').trim();
+      if (!name) {
+        this.snackBar.open('Name is required', 'Close', { duration: 3000 });
+        return;
+      }
+      const catId = this.categoryId;
+      if (catId == null) {
+        this.snackBar.open('Category is required', 'Close', { duration: 3000 });
+        return;
+      }
+      const body: CreateLineBody = {
+        name,
+        field_name: formValue.field_name?.trim() || undefined,
+        default: formValue.default?.trim() || undefined,
+        reason: formValue.reason?.trim() || undefined,
+        comment: formValue.comment?.trim() || undefined,
+        seq_no: formValue.seq_no != null && formValue.seq_no !== '' ? Number(formValue.seq_no) : undefined,
+        customer_settings: formValue.customer_settings?.trim() || undefined,
+        no_of_chars: formValue.no_of_chars?.trim() || undefined,
+        sub_category_id: formValue.sub_category_id ?? undefined,
+        table_id: tableId ?? undefined,
+        column_id: columnId ?? undefined,
+        exclude: formValue.exclude ?? false,
+        iskeyfield: formValue.iskeyfield ?? false,
+        isfkfield: formValue.isfkfield ?? false
+      };
+      this.apiService.createLine(catId, body).subscribe({
+        next: (createdLine) => {
+          this.snackBar.open('Line created successfully', 'Close', { duration: 2000 });
+          if (this.categoryId) {
+            this.categoryRefreshService.refreshCategory(this.categoryId);
+          }
+          this.dialogRef.close(createdLine);
+        },
+        error: (err) => {
+          console.error('Error creating line:', err);
+          this.snackBar.open('Error creating line', 'Close', { duration: 3000 });
+        }
+      });
+      return;
     }
 
-    // Use 0 to clear the value on the server if nothing is selected
-    const tableIdToSend = tableId || 0;
-    const columnIdToSend = columnId || 0;
-
-    // Get comment and exclude values from form
-    const commentValue = formValue.comment || '';
-    const excludeValue = formValue.exclude || false;
-
-    // Send PATCH request to /api/lines/{line_id} with exclude field
-    this.apiService.updateLineWithExclude(this.data.line.id, tableIdToSend, columnIdToSend, commentValue, excludeValue).subscribe({
-      next: (savedLine: Line) => {
-        // Create updated line object with the new table and column names
-        const updatedLine: Line = {
-          ...this.data.line,
-          table_name: typeof formValue.table_name === 'string'
-            ? formValue.table_name
-            : formValue.table_name?.name || '',
-          column_name: typeof formValue.column_name === 'string'
-            ? formValue.column_name
-            : formValue.column_name?.name || '',
-          table_id: tableId,
-          column_id: columnId,
-          comment: commentValue,
-          exclude: excludeValue
-        };
-
-        this.snackBar.open('Line saved successfully', 'Close', {
-          duration: 2000
-        });
-
-        // Trigger category refresh if categoryId is available
-        if (this.data.categoryId) {
-          this.categoryRefreshService.refreshCategory(this.data.categoryId);
+    const line = this.line!;
+    const patchBody: Partial<LinePatchBody> = {
+      name: formValue.name?.trim(),
+      field_name: formValue.field_name?.trim(),
+      default: formValue.default?.trim(),
+      reason: formValue.reason?.trim(),
+      comment: formValue.comment?.trim(),
+      seq_no: formValue.seq_no != null && formValue.seq_no !== '' ? Number(formValue.seq_no) : undefined,
+      customer_settings: formValue.customer_settings?.trim(),
+      no_of_chars: formValue.no_of_chars?.trim(),
+      sub_category_id: formValue.sub_category_id ?? null,
+      table_id: tableId ?? null,
+      column_id: columnId ?? null,
+      exclude: formValue.exclude,
+      iskeyfield: formValue.iskeyfield,
+      isfkfield: formValue.isfkfield
+    };
+    this.apiService.patchLine(line.id, patchBody).subscribe({
+      next: (savedLine) => {
+        this.snackBar.open('Line saved successfully', 'Close', { duration: 2000 });
+        if (this.categoryId) {
+          this.categoryRefreshService.refreshCategory(this.categoryId);
         }
-
-        this.dialogRef.close(updatedLine);
+        this.dialogRef.close(savedLine);
       },
-      error: (error: any) => {
-        console.error('Error saving line:', error);
-        this.snackBar.open('Error saving line', 'Close', {
-          duration: 3000
-        });
+      error: (err) => {
+        console.error('Error saving line:', err);
+        this.snackBar.open('Error saving line', 'Close', { duration: 3000 });
       }
     });
   }
 
   onSearchColumns(): void {
-    const fieldName = this.data.line.field_name;
+    const fieldName = this.getFieldNameForMatch();
     if (!fieldName || !fieldName.trim()) {
       this.snackBar.open('No field name available to search', 'Close', {
         duration: 3000
@@ -622,18 +749,15 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
   }
 
   isSearchEnabled(): boolean {
-    const fieldName = this.data.line.field_name;
-    return !!(fieldName && fieldName.trim());
+    return !!this.getFieldNameForMatch();
   }
 
   onExcludeToggle(): void {
+    if (!this.line) return;
     const excludeValue = this.editForm.get('exclude')?.value;
-    
-    // Use the dedicated exclude endpoint for immediate feedback
-    this.apiService.toggleLineExclude(this.data.line.id, excludeValue).subscribe({
+    this.apiService.toggleLineExclude(this.line.id, excludeValue).subscribe({
       next: (updatedLine: Line) => {
-        // Update the local line data
-        this.data.line.exclude = excludeValue;
+        if (this.line) this.line.exclude = excludeValue;
         
         this.snackBar.open(
           excludeValue ? 'Line excluded from calculations' : 'Line included in calculations', 

@@ -1,8 +1,59 @@
 <div class="edit-dialog">
-  <h2 mat-dialog-title>Edit Line: {{ getLineDisplayName() }} ({{ getLineFieldName()  }})</h2>
+  <h2 mat-dialog-title>{{ isCreateMode ? 'Add line' : 'Edit Line: ' + getLineDisplayName() + (getLineFieldName() ? ' (' + getLineFieldName() + ')' : '') }}</h2>
 
   <mat-dialog-content>
+    @if (loadingLine()) {
+      <div class="loading-line"><mat-spinner diameter="32"></mat-spinner><span>Loading line...</span></div>
+    } @else {
     <form [formGroup]="editForm" class="edit-form">
+      <!-- Name (required for create) -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Name</mat-label>
+        <input matInput formControlName="name" placeholder="Line name" required>
+        @if (isCreateMode) {
+          <mat-error>Name is required</mat-error>
+        }
+      </mat-form-field>
+
+      <!-- Field Name -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Field Name</mat-label>
+        <input matInput formControlName="field_name" placeholder="Field name">
+      </mat-form-field>
+
+      <!-- Sub-category (when category has sub-categories) -->
+      @if (subCategories().length > 0) {
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Sub-category</mat-label>
+          <mat-select formControlName="sub_category_id">
+            <mat-option [value]="null">Uncategorized</mat-option>
+            @for (sc of subCategories(); track sc.id) {
+              <mat-option [value]="sc.id">{{ sc.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+
+      <!-- Default, Reason -->
+<!--      <mat-form-field appearance="outline" class="full-width">-->
+<!--        <mat-label>Default</mat-label>-->
+<!--        <input matInput formControlName="default" placeholder="Default value">-->
+<!--      </mat-form-field>-->
+
+      <!-- Seq No, Customer settings, No of chars -->
+<!--      <mat-form-field appearance="outline" class="full-width">-->
+<!--        <mat-label>Seq No</mat-label>-->
+<!--        <input matInput type="number" formControlName="seq_no" placeholder="Sequence number">-->
+<!--      </mat-form-field>-->
+<!--      <mat-form-field appearance="outline" class="full-width">-->
+<!--        <mat-label>Customer settings</mat-label>-->
+<!--        <input matInput formControlName="customer_settings" placeholder="Customer settings">-->
+<!--      </mat-form-field>-->
+<!--      <mat-form-field appearance="outline" class="full-width">-->
+<!--        <mat-label>No of chars</mat-label>-->
+<!--        <input matInput formControlName="no_of_chars" placeholder="No of chars">-->
+<!--      </mat-form-field>-->
+
       <!-- Table Name Autocomplete -->
       <div class="form-field-with-action">
         <mat-form-field appearance="outline" class="full-width">
@@ -103,22 +154,42 @@
         </button>
       </div>
 
-      <!-- Comment Field -->
-      <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Comment</mat-label>
-        <textarea
-          matInput
-          formControlName="comment"
-          placeholder="Enter comment..."
-          rows="3"
-          maxlength="500">
-        </textarea>
-        <mat-hint align="end">{{ editForm.get('comment')?.value?.length || 0 }}/500</mat-hint>
-      </mat-form-field>
+      <div class="form-field-with-action">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Reason</mat-label>
+          <input matInput formControlName="reason" placeholder="Reason">
+        </mat-form-field>
+        <button
+          mat-icon-button
+          type="button"
+          (click)="onFetchReasonFromColumn()"
+          [disabled]="!isFetchReasonEnabled() || loadingReason()"
+          class="clear-button"
+          matTooltip="Fill Reason from column comment">
+          @if (loadingReason()) {
+            <mat-spinner diameter="24"></mat-spinner>
+          } @else {
+            <mat-icon>description</mat-icon>
+          }
+        </button>
+      </div>
 
-      <!-- Exclude Checkbox -->
+      <!-- Comment Field -->
+<!--      <mat-form-field appearance="outline" class="full-width">-->
+<!--        <mat-label>Comment</mat-label>-->
+<!--        <textarea-->
+<!--          matInput-->
+<!--          formControlName="comment"-->
+<!--          placeholder="Enter comment..."-->
+<!--          rows="3"-->
+<!--          maxlength="500">-->
+<!--        </textarea>-->
+<!--        <mat-hint align="end">{{ editForm.get('comment')?.value?.length || 0 }}/500</mat-hint>-->
+<!--      </mat-form-field>-->
+
+      <!-- Exclude and key field checkboxes -->
       <div class="exclude-section">
-        <mat-checkbox 
+        <mat-checkbox
           formControlName="exclude"
           (change)="onExcludeToggle()"
           class="exclude-checkbox">
@@ -127,6 +198,10 @@
         <mat-hint class="exclude-hint">
           When checked, this line will be excluded from all percentage calculations and appear grayed out in the list.
         </mat-hint>
+      </div>
+      <div class="key-fields-section">
+        <mat-checkbox formControlName="iskeyfield" class="key-checkbox">Key field</mat-checkbox>
+        <mat-checkbox formControlName="isfkfield" class="key-checkbox">Foreign key field</mat-checkbox>
       </div>
 
       <!-- Auto-match button -->
@@ -144,7 +219,7 @@
           @if (!isAutoMatchEnabled()) {
             @if (!editForm.get('table_name')?.value) {
               Select a table first
-            } @else if (!data.line.field_name || !data.line.field_name.trim()) {
+            } @else if (!getFieldNameForMatch()) {
               No field name available
             } @else if (loadingColumns()) {
               Loading columns...
@@ -152,7 +227,7 @@
               No columns available
             }
           } @else {
-            Match column with field name: {{ data.line.field_name }}
+            Match column with field name: {{ getLineFieldName() }}
           }
         </mat-hint>
       </div>
@@ -172,7 +247,7 @@
           @if (!isSearchEnabled()) {
             No field name available to search
           } @else {
-            Search for columns matching field name across all tables: {{ data.line.field_name }}
+            Search for columns matching field name across all tables: {{ getLineFieldName() }}
           }
         </mat-hint>
       </div>
@@ -203,6 +278,7 @@
       }
 
     </form>
+    }
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">

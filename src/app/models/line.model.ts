@@ -12,6 +12,7 @@ export interface Line {
   field_name?: string;
   reason?: string;
   comment?: string;
+  seq_no?: number;
   sub_category_id?: number;
   table_name?: string;
   column_name?: string;
