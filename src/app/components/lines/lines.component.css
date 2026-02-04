@@ -1,3 +1,11 @@
+/* Fill parent (.lines-content) so scroll happens inside .content and sticky works */
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
 /* Screen reader only class for accessibility */
 .sr-only {
   position: absolute;
@@ -12,11 +20,11 @@
 }
 
 .lines-container {
-  height: 100%;
+  flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
 }
 
 .lines-toolbar {
@@ -37,7 +45,7 @@
 
 .content {
   flex: 1;
-  padding: 16px;
+  padding: 0;
   overflow-y: auto;
   min-height: 0;
 }
@@ -70,12 +78,20 @@
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
 }
 
 .lines-table {
   width: 100%;
   font-size: 0.875rem;
+}
+
+/* Sticky table header row so column headers stay visible when scrolling */
+.lines-table tr.mat-mdc-header-row,
+.lines-table tr[mat-header-row] {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: white;
 }
 
 .lines-table th {
@@ -694,7 +710,6 @@ tr[data-line-id].excluded-line {
   margin-bottom: 20px;
   border: 1px solid #e0e0e0;
   border-radius: 6px;
-  overflow: hidden;
   background: white;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -704,6 +719,9 @@ tr[data-line-id].excluded-line {
 }
 
 .sub-category-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -711,6 +729,8 @@ tr[data-line-id].excluded-line {
   background-color: #FCD5B4;
   border-bottom: 1px solid #dee2e6;
   font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  border-radius: 6px 6px 0 0;
 }
 
 .sub-category-header .left-section {
@@ -866,7 +886,13 @@ tr[data-line-id].excluded-line {
 .sub-category-group .lines-table {
   margin: 0;
   box-shadow: none;
-  border-radius: 0;
+  border-radius: 0 0 6px 6px;
+}
+
+/* Table header sticks below the sticky sub-category header in grouped view */
+.sub-category-group .lines-table tr.mat-mdc-header-row,
+.sub-category-group .lines-table tr[mat-header-row] {
+  top: 48px;
 }
 
 .sub-category-group .lines-table th {
