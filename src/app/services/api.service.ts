@@ -55,6 +55,32 @@ export interface LinePatchBody {
   isfkfield?: boolean;
 }
 
+/** Response from GET /api/github-connection */
+export interface GithubConnectionResponse {
+  configured: boolean;
+}
+
+/** Response from PUT/DELETE /api/github-connection */
+export interface GithubConnectionStatusResponse {
+  status: 'configured' | 'removed';
+}
+
+/** Body for POST /api/create-schema-pr (owner, repo, file_path, branch_name, base_branch are server-configured) */
+export interface CreateSchemaPrBody {
+  author: string;
+  pr_title: string;
+  pr_body?: string;
+}
+
+/** Response from POST /api/create-schema-pr */
+export interface CreateSchemaPrResponse {
+  pr_url: string;
+  pr_number: number;
+  branch: string;
+  commit_sha: string;
+  file_path: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -257,5 +283,24 @@ export class ApiService {
 
   deleteCategoryConfig(categoryId: number): Observable<Category> {
     return this.http.delete<Category>(`${this.baseUrl}/categories/${categoryId}/config`);
+  }
+
+  // GitHub connection
+  getGithubConnection(): Observable<GithubConnectionResponse> {
+    return this.http.get<GithubConnectionResponse>(`${this.baseUrl}/github-connection`);
+  }
+
+  setGithubConnection(github_token: string): Observable<GithubConnectionStatusResponse> {
+    return this.http.put<GithubConnectionStatusResponse>(`${this.baseUrl}/github-connection`, {
+      github_token
+    });
+  }
+
+  deleteGithubConnection(): Observable<GithubConnectionStatusResponse> {
+    return this.http.delete<GithubConnectionStatusResponse>(`${this.baseUrl}/github-connection`);
+  }
+
+  createSchemaPr(body: CreateSchemaPrBody): Observable<CreateSchemaPrResponse> {
+    return this.http.post<CreateSchemaPrResponse>(`${this.baseUrl}/create-schema-pr`, body);
   }
 }

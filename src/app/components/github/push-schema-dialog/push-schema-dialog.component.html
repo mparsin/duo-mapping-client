@@ -1,0 +1,64 @@
+<div class="push-schema-dialog">
+  <h2 mat-dialog-title>Push schema-config</h2>
+  <mat-dialog-content>
+    @if (hasPrResult) {
+      <div class="success-container">
+        <mat-icon color="primary" class="success-icon">check_circle</mat-icon>
+        <p class="success-title">Pull request created</p>
+        <a [href]="prResult()!.pr_url" target="_blank" rel="noopener noreferrer" class="pr-link">
+          {{ prResult()!.pr_url }}
+        </a>
+        <p class="success-detail">PR #{{ prResult()!.pr_number }} on branch {{ prResult()!.branch }}</p>
+      </div>
+    } @else {
+      @if (errorMessage()) {
+        <div class="error-container">
+          <mat-icon color="warn">error</mat-icon>
+          <p>{{ errorMessage() }}</p>
+        </div>
+      }
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Author</mat-label>
+        <input matInput [(ngModel)]="author" placeholder="e.g. Neil Matthews" [disabled]="isLoading()">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Title</mat-label>
+        <input matInput [(ngModel)]="prTitle" placeholder="e.g. February schema sync" [disabled]="isLoading()">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Body (optional)</mat-label>
+        <textarea matInput [(ngModel)]="prBody" rows="3" placeholder="e.g. Sync from production mapping." [disabled]="isLoading()"></textarea>
+      </mat-form-field>
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    @if (hasPrResult) {
+      <button mat-raised-button color="primary" (click)="openPr()">
+        <mat-icon>open_in_new</mat-icon>
+        Open PR
+      </button>
+      <button mat-button (click)="close()">Close</button>
+    } @else {
+      <button
+        mat-raised-button
+        color="primary"
+        (click)="submit()"
+        [disabled]="!canSubmit || isLoading()">
+        @if (isLoading()) {
+          <mat-spinner diameter="20"></mat-spinner>
+          <span class="btn-label">Creating...</span>
+        } @else {
+          <ng-container>
+            <mat-icon>pin_invoke)?</mat-icon>
+            <span class="btn-label">Create PR</span>
+          </ng-container>
+        }
+      </button>
+      <button mat-button (click)="dialogRef.close()" [disabled]="isLoading()">Cancel</button>
+    }
+  </mat-dialog-actions>
+</div>

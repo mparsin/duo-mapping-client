@@ -1,0 +1,49 @@
+<div class="connect-github-dialog">
+  <h2 mat-dialog-title>Connect GitHub</h2>
+  <mat-dialog-content>
+    <p class="hint">Use a GitHub Personal Access Token with <code>repo</code> scope so the app can create branches and pull requests.</p>
+
+    @if (errorMessage()) {
+      <div class="error-container">
+        <mat-icon color="warn">error</mat-icon>
+        <p>{{ errorMessage() }}</p>
+      </div>
+    }
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>GitHub Personal Access Token</mat-label>
+      <input
+        matInput
+        type="password"
+        [(ngModel)]="token"
+        placeholder="ghp_..."
+        autocomplete="off"
+        [disabled]="isLoading()">
+    </mat-form-field>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    @if (isConnected) {
+      <button mat-button color="warn" (click)="disconnect()" [disabled]="isLoading()">
+        <mat-icon>link_off</mat-icon>
+        Disconnect
+      </button>
+      <button
+        mat-raised-button
+        color="primary"
+        (click)="connectOrUpdate()"
+        [disabled]="!token.trim() || isLoading()">
+        <mat-icon>refresh</mat-icon>
+        Update token
+      </button>
+    } @else {
+      <button mat-raised-button color="primary" (click)="connectOrUpdate()" [disabled]="!token.trim() || isLoading()">
+        <mat-icon>link</mat-icon>
+        Connect
+      </button>
+    }
+    <button mat-button (click)="cancel()" [disabled]="isLoading()">
+      Cancel
+    </button>
+  </mat-dialog-actions>
+</div>
