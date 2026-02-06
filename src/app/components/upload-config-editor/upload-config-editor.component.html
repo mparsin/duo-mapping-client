@@ -318,7 +318,7 @@
                   {{ previewError() }}
                 </div>
               } @else if (previewJsonText()) {
-                <pre class="preview-json">{{ previewJsonText() }}</pre>
+                <div #previewEditor class="preview-monaco"></div>
               } @else {
                 <div class="placeholder">Click “Preview upload-config.json” to fetch and render the generated config.</div>
               }

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, AfterViewInit, computed, signal, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, AfterViewInit, computed, signal, effect, ElementRef, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -127,9 +127,12 @@ export class UploadConfigEditorComponent implements OnInit, AfterViewInit, OnDes
   categoryNameControl = new FormControl<string>('', { nonNullable: true, validators: [Validators.required] });
 
   @ViewChild('rawEditor', { static: false }) rawEditorElement?: ElementRef<HTMLElement>;
+  @ViewChild('previewEditor', { static: false }) previewEditorElement?: ElementRef<HTMLElement>;
   private rawEditor: any = null;
+  private previewEditor: any = null;
   private syncingEditorValue = false;
   private syncingFormValue = false;
+  private previousSetId: number | null = null;
 
   private subs = new Subscription();
 
@@ -137,8 +140,35 @@ export class UploadConfigEditorComponent implements OnInit, AfterViewInit, OnDes
     private tableSetsApi: TableSetsApi,
     private uploadConfigApi: UploadConfigApi,
     private snackBar: MatSnackBar,
-    private dialog: MatDialog
-  ) {}
+    private dialog: MatDialog,
+    private cdr: ChangeDetectorRef
+  ) {
+    // Only dispose raw editor when the SET changes (view is recreated). When only the category
+    // changes within the same set, keep the same editor and sync it to the new category's draft.
+    effect(() => {
+      const setId = this.selectedSetId();
+      this.selectedCategoryId();
+      const setChanged = setId !== this.previousSetId;
+      if (setChanged && this.rawEditor) {
+        this.rawEditor.dispose();
+        this.rawEditor = null;
+      }
+      this.previousSetId = setId;
+      if (this.editorTabIndex() !== 1) return;
+      if (this.rawEditor) {
+        const id = this.selectedCategoryId();
+        if (id !== null) this.syncMonacoFromDraft(id);
+      } else {
+        this.cdr.detectChanges();
+        setTimeout(() => {
+          void this.initRawEditorIfNeeded().then(() => {
+            const id = this.selectedCategoryId();
+            if (id !== null) this.syncMonacoFromDraft(id);
+          });
+        }, 0);
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.reload();
@@ -164,6 +194,10 @@ export class UploadConfigEditorComponent implements OnInit, AfterViewInit, OnDes
     if (this.rawEditor) {
       this.rawEditor.dispose();
       this.rawEditor = null;
+    }
+    if (this.previewEditor) {
+      this.previewEditor.dispose();
+      this.previewEditor = null;
     }
     this.subs.unsubscribe();
   }
@@ -429,10 +463,20 @@ export class UploadConfigEditorComponent implements OnInit, AfterViewInit, OnDes
   previewUploadConfig(): void {
     this.previewLoading.set(true);
     this.previewError.set(null);
+    if (this.previewEditor) {
+      this.previewEditor.dispose();
+      this.previewEditor = null;
+    }
 
     const sub = this.uploadConfigApi
       .previewUploadConfigText()
-      .pipe(finalize(() => this.previewLoading.set(false)))
+      .pipe(
+        finalize(() => {
+          this.previewLoading.set(false);
+          this.cdr.detectChanges();
+          setTimeout(() => this.initPreviewEditorIfNeeded(), 0);
+        })
+      )
       .subscribe({
         next: (text: string) => {
           try {
@@ -1169,7 +1213,14 @@ export class UploadConfigEditorComponent implements OnInit, AfterViewInit, OnDes
 
     if (!this.rawEditorElement) return;
 
-    this.rawEditor = monaco.editor.create(this.rawEditorElement.nativeElement, {
+    const container = this.rawEditorElement.nativeElement;
+    container.innerHTML = '';
+    const inner = document.createElement('div');
+    inner.style.width = '100%';
+    inner.style.height = '100%';
+    container.appendChild(inner);
+
+    this.rawEditor = monaco.editor.create(inner, {
       value: '{\n  \n}',
       language: 'json',
       theme: 'vs',
@@ -1201,6 +1252,34 @@ export class UploadConfigEditorComponent implements OnInit, AfterViewInit, OnDes
       this.ensureDraft(selectedId);
       this.syncMonacoFromDraft(selectedId);
     }
+  }
+
+  private async initPreviewEditorIfNeeded(): Promise<void> {
+    if (this.previewEditor) {
+      this.previewEditor.setValue(this.previewJsonText() ?? '');
+      return;
+    }
+
+    try {
+      await this.ensureMonacoLoaded();
+    } catch {
+      return;
+    }
+
+    if (!this.previewEditorElement) return;
+
+    this.previewEditor = monaco.editor.create(this.previewEditorElement.nativeElement, {
+      value: this.previewJsonText() ?? '',
+      language: 'json',
+      theme: 'vs',
+      automaticLayout: true,
+      minimap: { enabled: false },
+      scrollBeyondLastLine: false,
+      fontSize: 13,
+      tabSize: 2,
+      insertSpaces: true,
+      readOnly: true
+    });
   }
 
   private static positiveInteger(control: AbstractControl): ValidationErrors | null {

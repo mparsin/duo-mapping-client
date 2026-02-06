@@ -299,7 +299,7 @@
 
 .raw-monaco {
   width: 100%;
-  min-height: 360px;
+  height: 400px;
   border: 1px solid #ddd;
   border-radius: 8px;
   overflow: hidden;
@@ -335,17 +335,12 @@
   padding: 8px 0;
 }
 
-.preview-json {
-  max-height: 360px;
-  overflow: auto;
-  padding: 12px;
-  border: 1px solid #e0e0e0;
+.preview-monaco {
+  width: 100%;
+  min-height: 360px;
+  border: 1px solid #ddd;
   border-radius: 8px;
-  background: #fafafa;
-  font-family: Monaco, Menlo, Ubuntu Mono, monospace;
-  font-size: 12px;
-  line-height: 1.4;
-  white-space: pre;
+  overflow: hidden;
 }
 
 .placeholder {
