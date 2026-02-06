@@ -69,6 +69,51 @@
       </mat-chip>
     </mat-chip-set>
 
+    <!-- GitHub status -->
+    @if (githubConnectionLoading()) {
+      <span class="github-status">GitHub: Checking…</span>
+    } @else if (githubConnected() === false) {
+      <span class="github-status">GitHub: Not connected</span>
+      <button
+        mat-button
+        (click)="openConnectGitHubDialog()"
+        class="github-connect-btn"
+        matTooltip="Connect GitHub to create pull requests"
+        matTooltipPosition="below">
+        <mat-icon>link</mat-icon>
+        Connect GitHub
+      </button>
+    } @else if (githubConnected() === true) {
+      <span class="github-status">GitHub: Connected</span>
+      <button
+        mat-icon-button
+        [matMenuTriggerFor]="githubMenu"
+        matTooltip="GitHub options"
+        matTooltipPosition="below">
+        <mat-icon>more_vert</mat-icon>
+      </button>
+      <mat-menu #githubMenu="matMenu">
+        <button mat-menu-item (click)="openConnectGitHubDialog()">
+          <mat-icon>refresh</mat-icon>
+          <span>Update token</span>
+        </button>
+        <button mat-menu-item (click)="disconnectGithub()">
+          <mat-icon>link_off</mat-icon>
+          <span>Disconnect</span>
+        </button>
+      </mat-menu>
+    }
+
+    <button
+      mat-raised-button
+      (click)="openPushSchemaDialog()"
+      class="generate-schema-btn"
+      matTooltip="Create a pull request with schema-config.json"
+      matTooltipPosition="below">
+      <mat-icon>pin_invoke</mat-icon>
+      Push schema-config
+    </button>
+
     <button
       mat-raised-button
       color="primary"
@@ -90,8 +135,6 @@
       <mat-icon>download</mat-icon>
       Generate Schema
     </button>
-
-
   </mat-toolbar>
 
   <!-- Main Content -->

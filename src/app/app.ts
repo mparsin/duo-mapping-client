@@ -11,17 +11,35 @@ import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { CommonModule } from '@angular/common';
-import { Subscription} from 'rxjs';
+import { Subscription } from 'rxjs';
 import { SchemaGenerationService } from './services/schema-generation.service';
 import { ApiService } from './services/api.service';
 import { CategoryRefreshService } from './services/category-refresh.service';
 import { Category } from './models/category.model';
 import { SearchResult } from './models/search-result.model';
+import { ConnectGithubDialogComponent } from './components/github/connect-github-dialog/connect-github-dialog.component';
+import { PushSchemaDialogComponent } from './components/github/push-schema-dialog/push-schema-dialog.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, HttpClientModule, MatToolbarModule, MatButtonModule, MatIconModule, MatSnackBarModule, MatTooltipModule, MatChipsModule, MatInputModule, MatFormFieldModule, MatAutocompleteModule, MatMenuModule, CommonModule],
+  imports: [
+    RouterOutlet,
+    HttpClientModule,
+    MatToolbarModule,
+    MatButtonModule,
+    MatIconModule,
+    MatSnackBarModule,
+    MatTooltipModule,
+    MatChipsModule,
+    MatInputModule,
+    MatFormFieldModule,
+    MatAutocompleteModule,
+    MatMenuModule,
+    MatDialogModule,
+    CommonModule
+  ],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
@@ -37,6 +55,10 @@ export class App implements OnInit, OnDestroy {
   searchError = signal<string | null>(null);
   showSearchResults = signal<boolean>(false);
   private searchSubscription?: Subscription;
+
+  // GitHub connection (null = not yet fetched)
+  githubConnected = signal<boolean | null>(null);
+  githubConnectionLoading = signal<boolean>(false);
 
   // Computed property to calculate overall progress
   overallProgress = computed(() => {
@@ -55,15 +77,105 @@ export class App implements OnInit, OnDestroy {
     private schemaGenerationService: SchemaGenerationService,
     private apiService: ApiService,
     private categoryRefreshService: CategoryRefreshService,
-    private router: Router
+    private router: Router,
+    private dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
     this.loadCategories();
+    this.loadGithubConnection();
 
     // Subscribe to category refresh events
     this.refreshSubscription = this.categoryRefreshService.categoryRefresh$.subscribe(categoryId => {
       this.refreshCategory(categoryId);
+    });
+  }
+
+  loadGithubConnection(): void {
+    this.githubConnectionLoading.set(true);
+    this.apiService.getGithubConnection().subscribe({
+      next: (response) => {
+        this.githubConnected.set(response.configured);
+        this.githubConnectionLoading.set(false);
+      },
+      error: () => {
+        this.githubConnected.set(false);
+        this.githubConnectionLoading.set(false);
+      }
+    });
+  }
+
+  openConnectGitHubDialog(): void {
+    const dialogRef = this.dialog.open(ConnectGithubDialogComponent, {
+      width: '450px',
+      data: { isConnected: this.githubConnected() ?? false }
+    });
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result?.success || result?.removed) {
+        this.loadGithubConnection();
+        if (result.success) {
+          this.snackBar.open('GitHub connected successfully.', 'Close', {
+            duration: 3000,
+            horizontalPosition: 'center',
+            verticalPosition: 'top'
+          });
+        } else if (result.removed) {
+          this.snackBar.open('GitHub disconnected.', 'Close', {
+            duration: 3000,
+            horizontalPosition: 'center',
+            verticalPosition: 'top'
+          });
+        }
+      }
+    });
+  }
+
+  disconnectGithub(): void {
+    this.apiService.deleteGithubConnection().subscribe({
+      next: () => {
+        this.loadGithubConnection();
+        this.snackBar.open('GitHub disconnected.', 'Close', {
+          duration: 3000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top'
+        });
+      },
+      error: () => {
+        this.snackBar.open('Failed to disconnect GitHub.', 'Close', {
+          duration: 3000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top'
+        });
+      }
+    });
+  }
+
+  openPushSchemaDialog(): void {
+    const dialogRef = this.dialog.open(PushSchemaDialogComponent, {
+      width: '520px'
+    });
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result?.connectRequired) {
+        this.snackBar.open('Please connect GitHub first.', 'Close', {
+          duration: 3000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top'
+        });
+        this.openConnectGitHubDialog();
+      } else if (result?.updateTokenRequired) {
+        this.snackBar.open('Please update your GitHub token.', 'Close', {
+          duration: 3000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top'
+        });
+        this.openConnectGitHubDialog();
+      } else if (result?.prCreated && result.prUrl) {
+        this.snackBar.open('Pull request created successfully.', 'Close', {
+          duration: 3000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top'
+        });
+      }
     });
   }
 

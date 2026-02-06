@@ -283,6 +283,23 @@
   }
 }
 
+.github-status {
+  margin-right: 8px;
+  font-size: 0.9rem;
+  opacity: 0.95;
+}
+
+.github-connect-btn {
+  margin-right: 8px;
+}
+
+.github-connect-btn mat-icon {
+  margin-right: 4px;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
 .generate-schema-btn {
   margin-left: 16px;
   font-weight: 600;
