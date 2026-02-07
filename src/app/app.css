@@ -365,3 +365,34 @@
 ::ng-deep .error-snackbar .mat-mdc-snack-bar-action {
   color: white !important;
 }
+
+/* Signed-out view: minimal UI after logout to avoid flicker */
+.signed-out-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 1rem;
+  padding: 2rem;
+}
+
+.signed-out-title {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.signed-out-message {
+  margin: 0;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.signed-out-view button {
+  margin-top: 0.5rem;
+}
+
+.signed-out-view button mat-icon {
+  margin-right: 0.5rem;
+  vertical-align: middle;
+}

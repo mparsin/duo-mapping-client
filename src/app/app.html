@@ -1,4 +1,16 @@
 <div class="app-container">
+  @if (showSignedOutView()) {
+    <!-- Minimal view after sign-out: no toolbar, no empty data, just Sign In -->
+    <div class="signed-out-view">
+    <img class="logo" src="duo_logo.png"  alt="logo"/>
+      <h1 class="signed-out-title">{{ title() }}</h1>
+      <p class="signed-out-message">You are signed out.</p>
+      <button mat-raised-button color="primary" (click)="authService.login()">
+        <mat-icon>login</mat-icon>
+        Sign in
+      </button>
+    </div>
+  } @else {
   <!-- Global Header with Overall Progress Badge and Generate Schema Button -->
   <mat-toolbar class="app-toolbar" color="primary">
     <span class="app-title">{{ title() }}</span>
@@ -135,10 +147,20 @@
       <mat-icon>download</mat-icon>
       Generate Schema
     </button>
+
+    <button
+      mat-icon-button
+      (click)="signOut()"
+      matTooltip="Sign out"
+      matTooltipPosition="below"
+      aria-label="Sign out">
+      <mat-icon>logout</mat-icon>
+    </button>
   </mat-toolbar>
 
   <!-- Main Content -->
   <div class="main-content">
     <router-outlet />
   </div>
+  }
 </div>

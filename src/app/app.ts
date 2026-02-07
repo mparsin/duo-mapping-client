@@ -1,5 +1,5 @@
 import { Component, signal, computed, OnInit, OnDestroy } from '@angular/core';
-import { RouterOutlet, Router } from '@angular/router';
+import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { HttpClientModule } from '@angular/common/http';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
@@ -14,9 +14,11 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
+import { filter } from 'rxjs/operators';
 import { SchemaGenerationService } from './services/schema-generation.service';
 import { ApiService } from './services/api.service';
 import { CategoryRefreshService } from './services/category-refresh.service';
+import { AuthService } from './services/auth.service';
 import { Category } from './models/category.model';
 import { SearchResult } from './models/search-result.model';
 import { ConnectGithubDialogComponent } from './components/github/connect-github-dialog/connect-github-dialog.component';
@@ -48,6 +50,10 @@ export class App implements OnInit, OnDestroy {
   categories = signal<Category[]>([]);
   private refreshSubscription?: Subscription;
 
+  /** True when user is signed out and not on auth callback — show minimal "Sign in" view to avoid flicker after logout. */
+  protected showSignedOutView = signal(false);
+  private navSubscription?: Subscription;
+
   // Search functionality
   searchQuery = signal<string>('');
   searchResults = signal<SearchResult[]>([]);
@@ -77,13 +83,43 @@ export class App implements OnInit, OnDestroy {
     private schemaGenerationService: SchemaGenerationService,
     private apiService: ApiService,
     private categoryRefreshService: CategoryRefreshService,
+    protected authService: AuthService,
     private router: Router,
     private dialog: MatDialog
   ) {}
 
+  signOut(): void {
+    this.authService.logout();
+  }
+
   ngOnInit(): void {
-    this.loadCategories();
-    this.loadGithubConnection();
+    this.updateSignedOutView();
+    this.navSubscription = this.router.events
+      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+      .subscribe((e) => this.updateSignedOutView(e.urlAfterRedirects));
+
+    // Delay API calls until we've left /auth/callback and the access token is available
+    const runWhenReady = () => {
+      this.authService.whenTokenReady().then(() => this.authService.deferAfterTokenReady()).then(() => {
+        if (this.authService.isAuthenticated()) {
+          this.loadCategories();
+          this.loadGithubConnection();
+        }
+      });
+    };
+    const url = this.router.url;
+    if (url.startsWith('/auth/callback')) {
+      const sub = this.router.events
+        .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+        .subscribe((e) => {
+          if (!e.urlAfterRedirects.startsWith('/auth/callback')) {
+            runWhenReady();
+            sub.unsubscribe();
+          }
+        });
+    } else {
+      runWhenReady();
+    }
 
     // Subscribe to category refresh events
     this.refreshSubscription = this.categoryRefreshService.categoryRefresh$.subscribe(categoryId => {
@@ -179,7 +215,14 @@ export class App implements OnInit, OnDestroy {
     });
   }
 
+  private updateSignedOutView(url?: string): void {
+    const u = url ?? this.router.url;
+    const onCallback = u.startsWith('/auth/callback');
+    this.showSignedOutView.set(!this.authService.isAuthenticated() && !onCallback);
+  }
+
   ngOnDestroy(): void {
+    this.navSubscription?.unsubscribe();
     if (this.refreshSubscription) {
       this.refreshSubscription.unsubscribe();
     }

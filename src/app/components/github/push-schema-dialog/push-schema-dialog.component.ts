@@ -12,6 +12,7 @@ import {
   CreateSchemaPrBody,
   CreateSchemaPrResponse
 } from '../../../services/api.service';
+import { AuthService } from '../../../services/auth.service';
 
 export type PushSchemaDialogResult =
   | { connectRequired: true }
@@ -36,7 +37,7 @@ export type PushSchemaDialogResult =
   styleUrl: './push-schema-dialog.component.css'
 })
 export class PushSchemaDialogComponent {
-  author = '';
+  author: string;
   prTitle = 'Schema config update';
   prBody = '';
 
@@ -46,8 +47,11 @@ export class PushSchemaDialogComponent {
 
   constructor(
     public dialogRef: MatDialogRef<PushSchemaDialogComponent, PushSchemaDialogResult>,
-    private apiService: ApiService
-  ) {}
+    private apiService: ApiService,
+    private authService: AuthService
+  ) {
+    this.author = this.authService.getCurrentUserName();
+  }
 
   get hasPrResult(): boolean {
     return this.prResult() !== null;

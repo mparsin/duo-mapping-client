@@ -13,8 +13,10 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDialogModule } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
-import { ActivatedRoute, Router } from '@angular/router';
+import { filter } from 'rxjs/operators';
+import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
 import { ApiService } from '../../services/api.service';
+import { AuthService } from '../../services/auth.service';
 import { CategoryRefreshService } from '../../services/category-refresh.service';
 import { Category } from '../../models/category.model';
 import { LinesComponent } from '../lines/lines.component';
@@ -135,6 +137,7 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
 
   constructor(
     private apiService: ApiService,
+    private authService: AuthService,
     private categoryRefreshService: CategoryRefreshService,
     private snackBar: MatSnackBar,
     private route: ActivatedRoute,
@@ -179,7 +182,25 @@ export class MasterDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.loadCategories();
+    // Delay loading categories until we've left /auth/callback and the access token is available.
+    const runLoadCategories = () => {
+      this.authService.whenTokenReady().then(() => this.authService.deferAfterTokenReady()).then(() => {
+        if (this.authService.isAuthenticated()) this.loadCategories();
+      });
+    };
+    const url = this.router.url;
+    if (url.startsWith('/auth/callback')) {
+      const sub = this.router.events
+        .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+        .subscribe((e) => {
+          if (!e.urlAfterRedirects.startsWith('/auth/callback')) {
+            runLoadCategories();
+            sub.unsubscribe();
+          }
+        });
+    } else {
+      runLoadCategories();
+    }
 
     // Subscribe to category refresh events
     this.refreshSubscription = this.categoryRefreshService.categoryRefresh$.subscribe(categoryId => {
