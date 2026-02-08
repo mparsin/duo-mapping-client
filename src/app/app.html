@@ -11,8 +11,9 @@
       </button>
     </div>
   } @else {
-  <!-- Global Header with Overall Progress Badge and Generate Schema Button -->
+  <!-- Global Header with Overall Progress Badge and Schema & export menu -->
   <mat-toolbar class="app-toolbar" color="primary">
+    <img class="logo" src="duo_logo.png"  alt="logo" />
     <span class="app-title">{{ title() }}</span>
     <span class="spacer"></span>
 
@@ -118,35 +119,30 @@
 
     <button
       mat-raised-button
-      (click)="openPushSchemaDialog()"
-      class="generate-schema-btn"
-      matTooltip="Create a pull request with schema-config.json"
-      matTooltipPosition="below">
-      <mat-icon>pin_invoke</mat-icon>
-      Push schema-config
-    </button>
-
-    <button
-      mat-raised-button
       color="primary"
-      (click)="generateUploadConfig()"
-      class="generate-schema-btn"
-      matTooltip="Generate Upload Configuration File"
+      [matMenuTriggerFor]="schemaExportMenu"
+      class="schema-export-btn"
+      matTooltip="Schema and export options"
       matTooltipPosition="below">
-      <mat-icon>build</mat-icon>
-      Generate Upload Config
+      <mat-icon>file_download</mat-icon>
+      Schema &amp; export
+      <mat-icon class="dropdown-icon">arrow_drop_down</mat-icon>
     </button>
-
-    <button
-      mat-raised-button
-      color="warn"
-      (click)="generateSchema()"
-      class="generate-schema-btn"
-      matTooltip="Generate Schema Configuration File"
-      matTooltipPosition="below">
-      <mat-icon>download</mat-icon>
-      Generate Schema
-    </button>
+    <mat-menu #schemaExportMenu="matMenu">
+      <button mat-menu-item (click)="openPushSchemaDialog()">
+        <mat-icon>pin_invoke</mat-icon>
+        <span>Push schema-config</span>
+      </button>
+      <mat-divider></mat-divider>
+      <button mat-menu-item (click)="generateUploadConfig()">
+        <mat-icon>build</mat-icon>
+        <span>Generate Upload Config</span>
+      </button>
+      <button mat-menu-item (click)="generateSchema()">
+        <mat-icon>download</mat-icon>
+        <span>Generate Schema</span>
+      </button>
+    </mat-menu>
 
     <button
       mat-icon-button

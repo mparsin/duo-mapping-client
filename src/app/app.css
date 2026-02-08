@@ -15,6 +15,8 @@
   align-items: center;
 }
 
+
+
 .app-title {
   font-size: 1.4rem;
   font-weight: 700;
@@ -300,39 +302,39 @@
   height: 18px;
 }
 
-.generate-schema-btn {
+.schema-export-btn {
   margin-left: 16px;
   font-weight: 600;
-  min-width: 200px;
-  font-size: 1rem;
+  min-width: 160px;
+  font-size: 0.95rem;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   transition: all 0.3s ease;
-  animation: pulse 2s infinite;
   height: 48px;
-  border-radius: 24px;
+  border-radius: 4px;
 }
 
-.generate-schema-btn:hover {
-  transform: translateY(-2px) scale(1.05);
+/* Material wraps button content in .mdc-button__label; make it flex so dropdown icon can sit on the right */
+.schema-export-btn::ng-deep .mdc-button__label {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.schema-export-btn:hover {
+  transform: translateY(-2px) scale(1.02);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
 }
 
-.generate-schema-btn mat-icon {
+.schema-export-btn mat-icon:not(.dropdown-icon) {
   margin-right: 8px;
   font-size: 20px;
 }
 
-/* Pulse animation for the Generate Schema button */
-@keyframes pulse {
-  0% {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), 0 0 0 0 rgba(244, 67, 54, 0.7);
-  }
-  70% {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), 0 0 0 10px rgba(244, 67, 54, 0);
-  }
-  100% {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), 0 0 0 0 rgba(244, 67, 54, 0);
-  }
+.schema-export-btn .dropdown-icon {
+  margin-left: auto;
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
 }
 
 .main-content {
@@ -395,4 +397,9 @@
 .signed-out-view button mat-icon {
   margin-right: 0.5rem;
   vertical-align: middle;
+}
+
+.logo {
+  max-height: 46px;
+  padding-right: 0.5rem;
 }

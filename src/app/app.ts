@@ -11,6 +11,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatDividerModule } from '@angular/material/divider';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
@@ -39,14 +40,16 @@ import { PushSchemaDialogComponent } from './components/github/push-schema-dialo
     MatFormFieldModule,
     MatAutocompleteModule,
     MatMenuModule,
+    MatDividerModule,
     MatDialogModule,
     CommonModule
   ],
   templateUrl: './app.html',
+  standalone: true,
   styleUrl: './app.css'
 })
 export class App implements OnInit, OnDestroy {
-  protected readonly title = signal('DUO Mapper');
+  protected readonly title = signal('Mapper');
   categories = signal<Category[]>([]);
   private refreshSubscription?: Subscription;
 

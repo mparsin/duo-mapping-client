@@ -756,12 +756,12 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
     if (!this.line) return;
     const excludeValue = this.editForm.get('exclude')?.value;
     this.apiService.toggleLineExclude(this.line.id, excludeValue).subscribe({
-      next: (updatedLine: Line) => {
+      next: (_: Line) => {
         if (this.line) this.line.exclude = excludeValue;
-        
+
         this.snackBar.open(
-          excludeValue ? 'Line excluded from calculations' : 'Line included in calculations', 
-          'Close', 
+          excludeValue ? 'Line excluded from calculations' : 'Line included in calculations',
+          'Close',
           {
             duration: 2000
           }
@@ -777,7 +777,7 @@ export class EditLineDialogComponent implements OnInit, AfterViewInit {
         this.snackBar.open('Error updating exclude status', 'Close', {
           duration: 3000
         });
-        
+
         // Revert the checkbox state on error
         this.editForm.patchValue({ exclude: !excludeValue });
       }

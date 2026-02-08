@@ -6,12 +6,13 @@ This app uses AWS Cognito Hosted UI for sign-in and sends the access token to th
 
 In the Cognito User Pool → App integration → Hosted UI:
 
-- **Callback URLs**
+- **Callback URLs** (must match exactly; the app uses `origin + '/auth/callback'`)
   - Local: `http://localhost:4200/auth/callback`
-  - Prod: `<your CloudFront or S3 app base URL>/auth/callback` (e.g. `https://your-distribution.cloudfront.net/auth/callback`)
-- **Sign-out URLs**
-  - Local: `http://localhost:4200/`
-  - Prod: `<your app base URL>/` (e.g. `https://your-distribution.cloudfront.net/`)
+  - Prod: `https://<your-domain>/auth/callback` (e.g. `https://duo.piaws.qad.com/auth/callback`)
+  - Do **not** use the root URL here — `redirect_mismatch` means the callback URL in the request didn’t match this list.
+- **Sign-out URLs** (app uses `origin` with no path)
+  - Local: `http://localhost:4200` or `http://localhost:4200/`
+  - Prod: `https://<your-domain>` or `https://<your-domain>/` (e.g. `https://duo.piaws.qad.com`)
 
 ## SPA routes
 
@@ -43,11 +44,35 @@ Attach the JWT authorizer to every route (or stage) that should require a valid 
 
 ### 3. CORS
 
-Ensure CORS responses from your API include:
+The browser sends a **preflight** `OPTIONS` request before each API call. If the API does not respond with CORS headers (or returns an error on OPTIONS), you get: *"No 'Access-Control-Allow-Origin' header is present on the requested resource"*.
 
-- **Access-Control-Allow-Headers**: `Authorization`, `Content-Type` (and any other headers the client sends).
-- **Access-Control-Allow-Methods**: the HTTP methods your app uses (e.g. GET, POST, PUT, PATCH, DELETE).
-- **Access-Control-Allow-Origin**: your SPA origins (e.g. `http://localhost:4200` for dev, your CloudFront/S3 URL for prod).
+**Required response headers** (on both OPTIONS and on the actual GET/POST/etc. responses):
+
+| Header | Value (prod example) |
+|--------|----------------------|
+| `Access-Control-Allow-Origin` | `https://duo.piaws.qad.com` |
+| `Access-Control-Allow-Headers` | `Authorization`, `Content-Type` (and any other headers the client sends) |
+| `Access-Control-Allow-Methods` | `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS` |
+
+**AWS API Gateway REST API:**
+
+1. In **API Gateway** → your API (`xwrhlmtfk9`) → **Resources**.
+2. Select the resource (e.g. `/api` or `/prod/api`) or the root and enable CORS:
+   - **Actions** → **Enable CORS**.
+   - **Access-Control-Allow-Origin**: enter `https://duo.piaws.qad.com` (or add multiple origins if you use dev + prod).
+   - **Access-Control-Allow-Headers**: e.g. `Authorization,Content-Type`.
+   - **Access-Control-Allow-Methods**: e.g. `GET,POST,PUT,PATCH,DELETE,OPTIONS`.
+   - Save and **Deploy API** to your stage (e.g. `prod`).
+3. If you use a **Lambda proxy** or custom integration, your Lambda/backend must also return these headers on **every** response (including OPTIONS). API Gateway’s “Enable CORS” only adds them for the mock OPTIONS integration; actual method responses need the headers from your integration.
+4. For **proxy resources** (`/{proxy+}`), enable CORS on that resource as well so all paths under `/prod/api/...` get the headers.
+
+**Lambda / backend:** If the authorizer or integration returns the response, add to every response:
+
+- `Access-Control-Allow-Origin: https://duo.piaws.qad.com`
+- `Access-Control-Allow-Headers: Authorization, Content-Type`
+- `Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS`
+
+For OPTIONS (preflight), return status 200 with these headers and no body.
 
 The Angular app sends `Authorization: Bearer <access_token>` for requests to `environment.apiUrl` and `environment.cognito.apiUrl`.
 
