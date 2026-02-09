@@ -75,6 +75,33 @@
   font-size: 14px;
 }
 
+.merged-detail {
+  margin-top: 4px;
+}
+
+.merge-warning {
+  display: flex;
+  align-items: flex-start;
+  text-align: left;
+  padding: 12px;
+  margin-top: 16px;
+  background-color: #fff3e0;
+  border: 1px solid #ff9800;
+  border-radius: 4px;
+}
+
+.merge-warning mat-icon {
+  margin-right: 8px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.merge-warning p {
+  margin: 0;
+  color: #e65100;
+  font-size: 14px;
+}
+
 mat-dialog-actions {
   margin-top: 8px;
   padding: 8px;

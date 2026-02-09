@@ -80,6 +80,9 @@ export interface CreateSchemaPrResponse {
   branch: string;
   commit_sha: string;
   file_path: string;
+  merged?: boolean;
+  merge_commit_sha?: string | null;
+  merge_error?: string | null;
 }
 
 @Injectable({

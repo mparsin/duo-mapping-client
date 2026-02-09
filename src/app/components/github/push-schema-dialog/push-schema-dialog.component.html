@@ -9,6 +9,14 @@
           {{ prResult()!.pr_url }}
         </a>
         <p class="success-detail">PR #{{ prResult()!.pr_number }} on branch {{ prResult()!.branch }}</p>
+        @if (prResult()!.merged === true) {
+          <p class="success-detail merged-detail">Merged successfully.</p>
+        } @else if (prResult()!.merge_error) {
+          <div class="merge-warning">
+            <mat-icon color="warn">warning</mat-icon>
+            <p>Auto-merge could not be completed: {{ prResult()!.merge_error }}</p>
+          </div>
+        }
       </div>
     } @else {
       @if (errorMessage()) {
