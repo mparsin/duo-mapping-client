@@ -5,6 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { FormsModule } from '@angular/forms';
 import {
@@ -30,6 +31,7 @@ export type PushSchemaDialogResult =
     MatIconModule,
     MatFormFieldModule,
     MatInputModule,
+    MatCheckboxModule,
     MatProgressSpinnerModule,
     FormsModule
   ],
@@ -40,6 +42,7 @@ export class PushSchemaDialogComponent {
   author: string;
   prTitle = 'chore: Schema config update';
   prBody = '';
+  autoMerge = false;
 
   isLoading = signal(false);
   errorMessage = signal<string | null>(null);
@@ -73,7 +76,8 @@ export class PushSchemaDialogComponent {
 
     const body: CreateSchemaPrBody = {
       author: this.author.trim(),
-      pr_title: this.prTitle.trim()
+      pr_title: this.prTitle.trim(),
+      auto_merge: this.autoMerge
     };
     const bodyText = this.prBody.trim();
     if (bodyText) {

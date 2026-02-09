@@ -70,6 +70,7 @@ export interface CreateSchemaPrBody {
   author: string;
   pr_title: string;
   pr_body?: string;
+  auto_merge?: boolean;
 }
 
 /** Response from POST /api/create-schema-pr */

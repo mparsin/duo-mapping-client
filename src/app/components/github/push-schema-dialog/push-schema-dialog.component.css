@@ -13,6 +13,11 @@
   display: block;
 }
 
+.auto-merge-checkbox {
+  display: block;
+  margin-top: 8px;
+}
+
 .error-container {
   display: flex;
   align-items: center;

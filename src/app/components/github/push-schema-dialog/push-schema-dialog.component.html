@@ -32,6 +32,10 @@
         <mat-label>Body (optional)</mat-label>
         <textarea matInput [(ngModel)]="prBody" rows="3" placeholder="e.g. Sync from production mapping." [disabled]="isLoading()"></textarea>
       </mat-form-field>
+
+      <mat-checkbox [(ngModel)]="autoMerge" [disabled]="isLoading()" class="auto-merge-checkbox">
+        Auto-merge
+      </mat-checkbox>
     }
   </mat-dialog-content>
 
