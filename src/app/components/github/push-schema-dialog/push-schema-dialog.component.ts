@@ -38,7 +38,7 @@ export type PushSchemaDialogResult =
 })
 export class PushSchemaDialogComponent {
   author: string;
-  prTitle = 'Schema config update';
+  prTitle = 'chore: Schema config update';
   prBody = '';
 
   isLoading = signal(false);
