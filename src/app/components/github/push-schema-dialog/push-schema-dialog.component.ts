@@ -40,7 +40,7 @@ export type PushSchemaDialogResult =
 })
 export class PushSchemaDialogComponent {
   author: string;
-  prTitle = 'chore: Schema config update';
+  prTitle = 'fix: Schema config update';
   prBody = '';
   autoMerge = false;
 
